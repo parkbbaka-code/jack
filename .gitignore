@@ -21,6 +21,9 @@
 # production
 /build
 
+# local tools
+/.tools/
+
 # misc
 .DS_Store
 *.pem
