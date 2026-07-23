@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(ownerId) {
+      return signedIn() && request.auth.uid == ownerId;
+    }
+
+    match /users/{uid} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /wishes/{wishId} {
+      allow create: if owns(request.resource.data.ownerId);
+      allow read, update, delete: if owns(resource.data.ownerId);
+    }
+
+    match /trees/{treeId} {
+      allow read: if resource.data.scope == 'public' || owns(resource.data.ownerId);
+      allow create: if owns(request.resource.data.ownerId)
+        && request.resource.data.growth.waterCount == 0
+        && request.resource.data.growth.cheerCount == 0
+        && request.resource.data.growth.stageValue == 0
+        && request.resource.data.status == 'growing';
+      allow update: if owns(resource.data.ownerId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'scope', 'anonymous', 'season', 'updatedAt']);
+      allow delete: if owns(resource.data.ownerId);
+
+      match /journals/{journalId} {
+        function parentTree() {
+          return get(/databases/$(database)/documents/trees/$(treeId));
+        }
+
+        allow read: if owns(parentTree().data.ownerId);
+        allow create: if owns(parentTree().data.ownerId)
+          && request.resource.data.ownerId == request.auth.uid
+          && request.resource.data.treeId == treeId;
+        allow update, delete: if false;
+      }
+
+      match /cheers/{cheerId} {
+        function parentTree() {
+          return get(/databases/$(database)/documents/trees/$(treeId));
+        }
+
+        allow read: if signedIn() && (
+          parentTree().data.ownerId == request.auth.uid
+          || resource.data.fromUserId == request.auth.uid
+        );
+        allow create: if signedIn()
+          && parentTree().data.scope in ['public', 'link']
+          && request.resource.data.fromUserId == request.auth.uid
+          && request.resource.data.treeId == treeId;
+        allow update, delete: if false;
+      }
+    }
+
+    match /fruits/{fruitId} {
+      allow read: if owns(resource.data.ownerId);
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if owns(resource.data.userId);
+      allow update: if owns(resource.data.userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
+    }
+  }
+}

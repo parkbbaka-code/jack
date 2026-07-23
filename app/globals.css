@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-forest: #1c3a28;
+  --color-canopy: #2c5a3c;
+  --color-gold: #c6a24e;
+  --color-ivory: #f6f2e9;
+  --color-night: #0c1810;
+  --color-sub: #5e6b5a;
+  --font-sans: Pretendard, "Apple SD Gothic Neo", sans-serif;
+  --font-serif: "Noto Serif KR", "AppleMyungjo", serif;
+}
+
+:root {
+  color-scheme: light;
+  --background: #f6f2e9;
+  --foreground: #1c3a28;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Pretendard, "Apple SD Gothic Neo", sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.forest-halo {
+  position: absolute;
+  inset: 8% 12% auto;
+  height: 62vh;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 45%, rgb(198 162 78 / 18%), transparent 28%),
+    radial-gradient(circle at 50% 70%, rgb(44 90 60 / 20%), transparent 62%);
+  filter: blur(12px);
+}
+
+.button-primary,
+.button-secondary {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.button-primary {
+  background: #1c3a28;
+  color: #f6f2e9;
+}
+
+.button-secondary {
+  border: 1px solid rgb(28 58 40 / 22%);
+  background: rgb(255 255 255 / 32%);
+  color: #1c3a28;
+}
+
+.button-primary:hover,
+.button-secondary:hover {
+  transform: translateY(-1px);
+}
