@@ -103,6 +103,17 @@ export function HomeScreen() {
     };
   }, [refreshKey, router]);
 
+  useEffect(() => {
+    if (!data) return;
+
+    const awayDays = getAwayDays(data.tree.lastWateredAt?.toDate?.() ?? null);
+    const returnKey = `iroori-return-${data.tree.treeId}`;
+
+    if (awayDays >= 3 && sessionStorage.getItem(returnKey) !== "shown") {
+      router.replace("/welcome-back");
+    }
+  }, [data, router]);
+
   if (!data) {
     return (
       <main className="flex min-h-svh items-center justify-center">
