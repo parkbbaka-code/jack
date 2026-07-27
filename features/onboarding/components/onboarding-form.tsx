@@ -25,6 +25,7 @@ export function OnboardingForm() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [wish, setWish] = useState("");
+  const [step, setStep] = useState("");
   const [treeName, setTreeName] = useState("나의 나무");
   const [scope, setScope] = useState<Visibility>("private");
   const [anonymous, setAnonymous] = useState(true);
@@ -83,7 +84,14 @@ export function OnboardingForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!user || wish.trim().length < 2 || treeName.trim().length < 1) return;
+    if (
+      !user ||
+      wish.trim().length < 2 ||
+      step.trim().length < 2 ||
+      treeName.trim().length < 1
+    ) {
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -134,6 +142,8 @@ export function OnboardingForm() {
           ownerId: user.uid,
           wishId: wishRef.id,
           name: treeName.trim(),
+          wish: wish.trim(),
+          step: step.trim(),
           scope,
           anonymous: scope === "private" ? false : anonymous,
           status: "growing",
@@ -143,11 +153,13 @@ export function OnboardingForm() {
             cheerCount: 0,
             stageValue: 0,
             bloomedAt: null,
+            lastLeafCount: 0,
           },
           seed: createSeed(),
           createdAt: now,
           updatedAt: now,
           lastWateredAt: null,
+          returnShownAt: null,
           fruitId: null,
         });
       });
@@ -207,6 +219,28 @@ export function OnboardingForm() {
           />
           <span className="text-sub mt-1 block text-right text-xs">
             {wish.length}/120
+          </span>
+        </label>
+
+        <label className="mt-5 block">
+          <span className="text-forest text-sm font-semibold">
+            오늘의 한 걸음
+          </span>
+          <p className="text-sub mt-1 text-sm">
+            결과가 아니라, 오늘 내가 할 수 있는 작은 행동을 적어주세요.
+          </p>
+          <input
+            className="border-forest/15 text-forest focus:border-canopy mt-2 min-h-12 w-full rounded-2xl border bg-white/70 px-4 outline-none"
+            disabled={isSubmitting}
+            maxLength={120}
+            minLength={2}
+            onChange={(event) => setStep(event.target.value)}
+            placeholder="예: 이력서 한 줄 고치기"
+            required
+            value={step}
+          />
+          <span className="text-sub mt-1 block text-right text-xs">
+            {step.length}/120
           </span>
         </label>
 

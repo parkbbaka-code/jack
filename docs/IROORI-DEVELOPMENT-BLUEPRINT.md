@@ -1,75 +1,52 @@
-# IROORI Development Blueprint — Implementation Edition
+# IROORI Development Blueprint — v2
 
-This document is the repository-level source of truth. It applies the original
-product blueprint with the engineering corrections agreed before implementation.
+This is the repository-level source of truth. It supersedes v1 while keeping
+its core philosophy: a tree never dies, loses progress, or judges its owner.
 
-## Product invariants
+## Product direction
 
-1. One wish creates one tree. A user may own multiple trees over time.
-2. Time changes only the season. It never changes tree size or growth progress.
-3. Journal records are water and are the only input that increases tree size.
-4. Cheers are sunlight: they add warmth, fireflies, and bloom ambience, but never
-   make a tree grow faster.
-5. Trees never die, wither, lose progress, or punish an absent user.
-6. Notification copy is an invitation, never guilt or pressure.
+IROORI is a gentle place to return to. It helps people make a small step toward
+one wish, leave a light record when they want to, and see that time as a tree.
+There are no streaks, rankings, deadlines, or guilt-inducing notifications.
 
-## Authentication decision
+## v2 product rules
 
-- MVP providers: Google and Email. Apple is a fast-follow item.
-- Kakao and Naver custom-token login are postponed until after MVP validation.
-- The browser exchanges a recent Firebase ID token at `POST /api/auth/session`.
-- The server stores a five-day `httpOnly`, `sameSite=lax` session cookie.
-- `proxy.ts` checks only cookie presence because Cloudflare middleware does not
-  support the Node.js runtime. Protected server layouts and API handlers perform
-  authoritative Firebase Admin session verification.
+1. One person begins with one private tree. A tree starts with a `wish` and a
+   concrete `step` (today's small action).
+2. Watering is available once per Korean calendar day. A written journal entry
+   is optional; watering alone is meaningful.
+3. Only water records change tree growth. Time changes the season and can shape
+   a welcome-back message, but never removes growth.
+4. Growth uses a logarithmic curve: `log(1 + 0.3 * waterCount) / log(19)`,
+   capped at 1. A tree becomes ready to bloom after 60 water records.
+5. Each water record also changes visual detail: leaves, flowers, moss, and
+   birds. A first water must be visibly meaningful.
+6. Return messages are based on absence length and always welcome the person
+   back without asking for an explanation.
+7. Journal rhythm can be described as an observation, never a score or a
+   failure.
 
-## Growth authority
+## Trusted-server authority
 
-- A tree reaches the ready-to-bloom stage after 30 daily water records, or about one month.
-- Clients may create immutable journal entries but never write aggregate growth.
-- A trusted server transaction or Firebase Cloud Function increments
-  `waterCount`, recomputes `stageValue`, and updates `lastWateredAt`.
-- Bloom, fruit creation, status transitions, and denormalized counters are also
-  trusted-server writes. Firestore rules reject those fields from clients.
-- `features/tree/lib/growth.ts` is the shared pure calculation. Its signature
-  intentionally accepts only `waterCount`; there is no time or cheer argument.
+- Clients may create their initial tree and optional journal text, but they
+  never change aggregate growth.
+- A server transaction creates the day's journal, increments `waterCount`,
+  recalculates `stageValue`, updates visual-detail counters, and records
+  `lastWateredAt` atomically.
+- Bloom and later lifecycle transitions remain trusted-server writes.
 
-## MVP scope
+## Scope and sequencing
 
-Included: project foundation, Google/Email auth, onboarding and first seed, tree
-renderer, journal/water, growth, bloom/fruit, public forest and cheers, gentle
-welcome-back, season visuals, profile, and essential settings.
+Implemented now: Google/Email authentication, first tree onboarding, private
+tree home, optional journal watering, v2 logarithmic growth, flower-ready
+state, seasonal visuals, welcome-back copy, and gentle rhythm description.
 
-Deferred: payments, premium catalog, Kakao/Naver login, AI, collaborative trees,
-native wrappers, widgets, wearables, commerce, and blockchain features.
+Deferred until the completion rate reaches 10%: fruit time capsules, public
+forest, cheers, push notifications, multi-tree expansion, sharing, and social
+features. These are deliberately not prerequisites for a calm first product.
 
-## Deployment decision
+## Deployment
 
-- Next.js App Router deploys to Cloudflare Workers through OpenNext.
-- Route handlers and React Server Components are supported.
-- `nodejs_compat` is enabled. Node.js middleware is not used.
-- Firebase Admin compatibility must be verified with `pnpm preview` before the
-  first production deployment. If the Admin SDK is not reliable in Workers, the
-  session and growth-authority endpoints move to Firebase Cloud Functions behind
-  the same service interfaces.
-
-## Layering
-
-`app -> features -> services -> lib`
-
-Feature internals are private. Cross-feature reuse belongs in shared components,
-hooks, services, constants, or domain types. TanStack Query owns server state,
-Zustand owns ephemeral UI state, and auth state is exposed through a provider.
-
-## Current implementation order
-
-0. Foundation and architecture invariants — complete.
-1. Firebase project configuration — complete.
-2. Google/Email auth and session exchange — complete.
-3. Onboarding and atomic first wish/tree creation — complete.
-4. Deterministic SVG tree renderer — complete.
-5. Journal history and server-authoritative daily watering — complete.
-6. Growth display — complete.
-7. Server-authoritative bloom and flower visuals — complete.
-8. Fruit time capsule, then forest and cheers.
-9. Profile and essential settings.
+The app is a Next.js App Router service deployed to Cloudflare Workers through
+OpenNext. Firebase provides authentication and Firestore. Protected server
+routes verify the Firebase session cookie before trusted writes.

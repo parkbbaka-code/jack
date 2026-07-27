@@ -9,6 +9,7 @@ export interface GrowthState {
   cheerCount: number;
   stageValue: number;
   bloomedAt: Timestamp | null;
+  lastLeafCount?: number;
 }
 
 export interface UserProfile {
@@ -57,4 +58,7 @@ export interface Tree {
   updatedAt: Timestamp;
   lastWateredAt: Timestamp | null;
   fruitId: string | null;
+  wish?: string;
+  step?: string;
+  returnShownAt?: Timestamp | null;
 }

@@ -9,7 +9,7 @@ import {
 import { verifySession } from "@/lib/firebase/session";
 
 const bodySchema = z.object({
-  text: z.string().trim().min(1).max(500),
+  text: z.string().trim().max(500),
   mood: z.enum(["calm", "grateful", "hopeful", "tired"]),
 });
 const treeIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);

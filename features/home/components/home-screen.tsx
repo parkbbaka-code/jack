@@ -6,8 +6,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { WaterJournalForm } from "@/features/journal/components/water-journal-form";
+import { getKoreanDateId } from "@/features/journal/lib/date";
+import { describeRhythm } from "@/features/journal/lib/rhythm";
 import { BloomCard } from "@/features/tree/components/bloom-card";
+import { ReturnCard } from "@/features/tree/components/return-card";
 import { TreeRenderer } from "@/features/tree/components/tree-renderer";
+import { getAwayDays } from "@/features/tree/lib/return";
 import type { Journal, Tree, Wish } from "@/types/models";
 
 type HomeData = { tree: Tree; wish: Wish | null; journals: Journal[] };
@@ -108,6 +112,12 @@ export function HomeScreen() {
     );
   }
 
+  const awayDays = getAwayDays(data.tree.lastWateredAt?.toDate?.() ?? null);
+  const rhythm = describeRhythm(
+    data.journals.map((journal) => journal.journalId),
+    getKoreanDateId(),
+  );
+
   return (
     <main className="relative mx-auto min-h-svh max-w-2xl overflow-hidden px-6 py-10">
       <div aria-hidden className="forest-halo" />
@@ -133,13 +143,15 @@ export function HomeScreen() {
         />
       </section>
 
-      {data.wish && (
+      <ReturnCard awayDays={awayDays} />
+
+      {(data.tree.wish ?? data.wish?.text) && (
         <section className="border-gold/25 bg-gold/5 relative mt-6 rounded-3xl border p-6">
           <p className="text-gold text-xs font-semibold tracking-[0.18em]">
             MY WISH
           </p>
           <p className="text-forest mt-3 font-serif text-xl leading-8">
-            “{data.wish.text}”
+            “{data.tree.wish ?? data.wish?.text}”
           </p>
         </section>
       )}
@@ -148,6 +160,10 @@ export function HomeScreen() {
         <span>물 준 날 {data.tree.growth.waterCount}일</span>
         <span>햇살 {data.tree.growth.cheerCount}개</span>
       </div>
+
+      {rhythm && (
+        <p className="text-sub relative mt-3 text-center text-sm">{rhythm}</p>
+      )}
 
       <BloomCard
         onBloomed={() => {
@@ -164,6 +180,7 @@ export function HomeScreen() {
           setData(null);
           setRefreshKey((value) => value + 1);
         }}
+        step={data.tree.step}
         treeId={data.tree.treeId}
       />
     </main>

@@ -1,6 +1,6 @@
 import { getKoreanDateId } from "@/features/journal/lib/date";
 import { canBloomTree } from "@/features/tree/lib/bloom";
-import { calculateGrowth } from "@/features/tree/lib/growth";
+import { calculateGrowth, getGrowthDetails } from "@/features/tree/lib/growth";
 import { getFirebaseServiceAccount } from "@/lib/firebase/credentials";
 import { getGoogleAccessToken } from "@/lib/firebase/google-access-token";
 
@@ -130,6 +130,7 @@ export async function waterTreeWithJournal(input: {
     const nextGrowth = calculateGrowth(
       getInteger(growthFields?.waterCount) + 1,
     );
+    const nextDetails = getGrowthDetails(nextGrowth.waterCount);
     const now = new Date();
     const timestamp = now.toISOString();
     const journalId = getKoreanDateId(now);
@@ -169,6 +170,9 @@ export async function waterTreeWithJournal(input: {
                           integerValue: String(nextGrowth.waterCount),
                         },
                         stageValue: { doubleValue: nextGrowth.stageValue },
+                        lastLeafCount: {
+                          integerValue: String(nextDetails.leaves),
+                        },
                       },
                     },
                   },
@@ -180,6 +184,7 @@ export async function waterTreeWithJournal(input: {
                 fieldPaths: [
                   "growth.waterCount",
                   "growth.stageValue",
+                  "growth.lastLeafCount",
                   "lastWateredAt",
                   "updatedAt",
                 ],

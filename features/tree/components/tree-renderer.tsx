@@ -1,4 +1,4 @@
-import { calculateGrowth } from "@/features/tree/lib/growth";
+import { calculateGrowth, getGrowthDetails } from "@/features/tree/lib/growth";
 import type { Season, TreeStatus } from "@/types/models";
 
 interface TreeRendererProps {
@@ -64,6 +64,7 @@ export function TreeRenderer({
   status,
 }: TreeRendererProps) {
   const growth = calculateGrowth(waterCount);
+  const details = getGrowthDetails(waterCount);
   const isBloomed = status === "bloomed" || status === "archived";
   const palette = palettes[season];
   const random = mulberry32(seed);
@@ -71,8 +72,7 @@ export function TreeRenderer({
   const trunkTop = 290 - trunkHeight;
   const branchCount =
     growth.stage === "seed" ? 0 : 2 + Math.floor(growth.stageValue * 8);
-  const leafCount =
-    growth.stage === "seed" ? 0 : 4 + Math.floor(growth.stageValue * 32);
+  const leafCount = growth.stage === "seed" ? 0 : details.leaves;
   const branches = Array.from({ length: branchCount }, (_, index) => {
     const progress = (index + 1) / (branchCount + 1);
     const y = 280 - trunkHeight * (0.24 + progress * 0.68);
@@ -106,16 +106,19 @@ export function TreeRenderer({
     cy: 70 + random() * 190,
     delay: `${(random() * 3).toFixed(2)}s`,
   }));
-  const flowers = Array.from({ length: isBloomed ? 18 : 0 }, (_, index) => ({
-    cx: 160 + Math.cos(random() * Math.PI * 2) * random() * crownRadius,
-    cy:
-      trunkTop +
-      18 +
-      Math.sin(random() * Math.PI * 2) * random() * crownRadius * 0.58,
-    color:
-      index % 3 === 0 ? "#f0c7cf" : index % 3 === 1 ? "#fff5e2" : "#d8b4c2",
-    rotation: random() * 60,
-  }));
+  const flowers = Array.from(
+    { length: isBloomed ? 18 : details.flowers },
+    (_, index) => ({
+      cx: 160 + Math.cos(random() * Math.PI * 2) * random() * crownRadius,
+      cy:
+        trunkTop +
+        18 +
+        Math.sin(random() * Math.PI * 2) * random() * crownRadius * 0.58,
+      color:
+        index % 3 === 0 ? "#f0c7cf" : index % 3 === 1 ? "#fff5e2" : "#d8b4c2",
+      rotation: random() * 60,
+    }),
+  );
 
   return (
     <figure className="flex w-full flex-col items-center">

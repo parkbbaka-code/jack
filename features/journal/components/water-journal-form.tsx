@@ -26,11 +26,13 @@ export function WaterJournalForm({
   onWatered,
   journals,
   isGrowing,
+  step,
 }: {
   treeId: string;
   onWatered: () => void;
   journals: Journal[];
   isGrowing: boolean;
+  step?: string;
 }) {
   const [text, setText] = useState("");
   const [mood, setMood] = useState<(typeof moods)[number]["id"]>("calm");
@@ -77,7 +79,9 @@ export function WaterJournalForm({
         </span>
         <div>
           <h2 className="text-forest font-serif text-xl">오늘의 물 주기</h2>
-          <p className="text-sub mt-1 text-sm">하루의 마음을 한 번 기록해요.</p>
+          <p className="text-sub mt-1 text-sm">
+            {step ?? "오늘의 작은 한 걸음을 나무에 남겨보세요."}
+          </p>
         </div>
       </div>
 
@@ -86,7 +90,11 @@ export function WaterJournalForm({
           <p className="text-canopy text-xs font-semibold tracking-[0.16em]">
             TODAY · 물 주기 완료
           </p>
-          <p className="text-forest mt-3 leading-7">“{todayJournal.text}”</p>
+          <p className="text-forest mt-3 leading-7">
+            {todayJournal.text
+              ? `“${todayJournal.text}”`
+              : "오늘의 한 걸음이 나무에 스며들었어요."}
+          </p>
           <p className="text-sub mt-3 text-sm">
             {moodDetails[todayJournal.mood].emoji}{" "}
             {moodDetails[todayJournal.mood].label} · 성장 물{" "}
@@ -100,8 +108,7 @@ export function WaterJournalForm({
             disabled={isSubmitting}
             maxLength={500}
             onChange={(event) => setText(event.target.value)}
-            placeholder="오늘 소원을 위해 어떤 마음을 보냈나요?"
-            required
+            placeholder="오늘 걸은 한 걸음을 남겨도 좋아요. 비워두어도 괜찮아요."
             value={text}
           />
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -127,7 +134,7 @@ export function WaterJournalForm({
             <span className="text-sub text-xs">{text.length}/500</span>
             <button
               className="button-primary gap-2 disabled:cursor-wait disabled:opacity-60"
-              disabled={isSubmitting || text.trim().length === 0}
+              disabled={isSubmitting}
               type="submit"
             >
               {isSubmitting ? (
@@ -167,7 +174,7 @@ export function WaterJournalForm({
                   </span>
                 </div>
                 <p className="text-forest mt-2 line-clamp-2 text-sm leading-6">
-                  {journal.text}
+                  {journal.text || "오늘의 한 걸음에 물을 주었어요."}
                 </p>
               </li>
             ))}
