@@ -33,29 +33,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid token" }, { status: 400 });
   }
 
-  const auth = getFirebaseAdminAuth();
-  const decoded = await auth.verifyIdToken(parsed.data.idToken);
-  const nowSeconds = Math.floor(Date.now() / 1000);
+  try {
+    const auth = getFirebaseAdminAuth();
+    const decoded = await auth.verifyIdToken(parsed.data.idToken);
+    const nowSeconds = Math.floor(Date.now() / 1000);
 
-  if (nowSeconds - decoded.auth_time > 5 * 60) {
-    return NextResponse.json(
-      { error: "Recent sign-in required" },
-      { status: 401 },
-    );
+    if (nowSeconds - decoded.auth_time > 5 * 60) {
+      return NextResponse.json(
+        { error: "Recent sign-in required" },
+        { status: 401 },
+      );
+    }
+
+    const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, {
+      expiresIn: SESSION_MAX_AGE_SECONDS * 1000,
+    });
+    const response = NextResponse.json({ ok: true });
+
+    response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+      path: "/",
+    });
+
+    return response;
+  } catch {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
-
-  const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, {
-    expiresIn: SESSION_MAX_AGE_SECONDS * 1000,
-  });
-  const response = NextResponse.json({ ok: true });
-
-  response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-    path: "/",
-  });
-
-  return response;
 }

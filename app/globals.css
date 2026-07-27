@@ -78,3 +78,8 @@ a {
 .button-secondary:hover {
   transform: translateY(-1px);
 }
+
+.button-primary:disabled,
+.button-secondary:disabled {
+  transform: none;
+}
