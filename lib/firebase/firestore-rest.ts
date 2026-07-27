@@ -1,4 +1,5 @@
 import { calculateGrowth } from "@/features/tree/lib/growth";
+import { getKoreanDateId } from "@/features/journal/lib/date";
 import { getFirebaseServiceAccount } from "@/lib/firebase/credentials";
 import { getGoogleAccessToken } from "@/lib/firebase/google-access-token";
 
@@ -41,15 +42,6 @@ function getGrowthFields(document: FirestoreDocument) {
 function getInteger(value: FirestoreValue | undefined) {
   const parsed = Number(value?.integerValue ?? 0);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getKoreanDateId(date: Date) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
 }
 
 async function authorizedFirestoreFetch(path: string, init?: RequestInit) {

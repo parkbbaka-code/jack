@@ -7,9 +7,9 @@ import { toast } from "sonner";
 
 import { WaterJournalForm } from "@/features/journal/components/water-journal-form";
 import { TreeRenderer } from "@/features/tree/components/tree-renderer";
-import type { Tree, Wish } from "@/types/models";
+import type { Journal, Tree, Wish } from "@/types/models";
 
-type HomeData = { tree: Tree; wish: Wish | null };
+type HomeData = { tree: Tree; wish: Wish | null; journals: Journal[] };
 
 const seasonNames: Record<Tree["season"], string> = {
   spring: "봄",
@@ -69,9 +69,20 @@ export function HomeScreen() {
         );
 
         if (!cancelled) {
+          const journalsQuery = firestore.query(
+            firestore.collection(db, "trees", tree.treeId, "journals"),
+            firestore.orderBy("createdAt", "desc"),
+            firestore.limit(7),
+          );
+          const journalsSnapshot =
+            await firestore.getDocsFromServer(journalsQuery);
+
           setData({
             tree,
             wish: wishSnapshot.exists() ? (wishSnapshot.data() as Wish) : null,
+            journals: journalsSnapshot.docs.map(
+              (journal) => journal.data() as Journal,
+            ),
           });
         }
       });
@@ -137,6 +148,7 @@ export function HomeScreen() {
       </div>
 
       <WaterJournalForm
+        journals={data.journals}
         onWatered={() => {
           setData(null);
           setRefreshKey((value) => value + 1);

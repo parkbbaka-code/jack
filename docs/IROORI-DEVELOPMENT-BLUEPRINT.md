@@ -64,9 +64,11 @@ Zustand owns ephemeral UI state, and auth state is exposed through a provider.
 ## Current implementation order
 
 0. Foundation and architecture invariants — complete.
-1. Firebase project configuration and emulator verification.
-2. Google/Email auth and session exchange.
-3. Onboarding and atomic first wish/tree creation.
-4. Canvas tree renderer.
-5. Journal and server-authoritative watering transaction.
-6. Growth, bloom, fruit, forest, profile, and settings in vertical slices.
+1. Firebase project configuration — complete.
+2. Google/Email auth and session exchange — complete.
+3. Onboarding and atomic first wish/tree creation — complete.
+4. Deterministic SVG tree renderer — complete.
+5. Journal history and server-authoritative daily watering — complete.
+6. Growth display — complete.
+7. Bloom and fruit, then forest and cheers.
+8. Profile and essential settings.
