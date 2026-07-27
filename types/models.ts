@@ -11,6 +11,27 @@ export interface GrowthState {
   bloomedAt: Timestamp | null;
 }
 
+export interface UserProfile {
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  activeTreeId: string | null;
+  onboardingCompleted: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface Wish {
+  wishId: string;
+  ownerId: string;
+  treeId: string;
+  text: string;
+  status: "active" | "fulfilled" | "archived";
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface Tree {
   treeId: string;
   ownerId: string;
