@@ -32,6 +32,16 @@ export interface Wish {
   updatedAt: Timestamp;
 }
 
+export interface Journal {
+  journalId: string;
+  ownerId: string;
+  treeId: string;
+  text: string;
+  mood: "calm" | "grateful" | "hopeful" | "tired";
+  waterCountAfter: number;
+  createdAt: Timestamp;
+}
+
 export interface Tree {
   treeId: string;
   ownerId: string;

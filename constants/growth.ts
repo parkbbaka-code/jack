@@ -1,4 +1,4 @@
-export const GROWTH_TARGET_WATER_COUNT = 72;
+export const GROWTH_TARGET_WATER_COUNT = 30;
 
 export const GROWTH_STAGES = [
   { id: "seed", min: 0 },

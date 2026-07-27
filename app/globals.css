@@ -83,3 +83,58 @@ a {
 .button-secondary:disabled {
   transform: none;
 }
+
+@keyframes tree-leaf-sway {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 1.5px -1px;
+  }
+}
+
+@keyframes tree-firefly-glow {
+  0%,
+  100% {
+    opacity: 0.25;
+    scale: 0.8;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.35;
+  }
+}
+
+@keyframes tree-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.tree-leaf {
+  animation: tree-leaf-sway 3.8s ease-in-out infinite;
+}
+
+.tree-firefly {
+  animation: tree-firefly-glow 2.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.tree-breathe {
+  animation: tree-breathe 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-leaf,
+  .tree-firefly,
+  .tree-breathe {
+    animation: none;
+  }
+}

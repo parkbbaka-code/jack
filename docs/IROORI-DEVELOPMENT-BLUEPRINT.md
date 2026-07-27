@@ -25,6 +25,7 @@ product blueprint with the engineering corrections agreed before implementation.
 
 ## Growth authority
 
+- A tree reaches the ready-to-bloom stage after 30 daily water records, or about one month.
 - Clients may create immutable journal entries but never write aggregate growth.
 - A trusted server transaction or Firebase Cloud Function increments
   `waterCount`, recomputes `stageValue`, and updates `lastWateredAt`.

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Leaf, LoaderCircle } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { WaterJournalForm } from "@/features/journal/components/water-journal-form";
+import { TreeRenderer } from "@/features/tree/components/tree-renderer";
 import type { Tree, Wish } from "@/types/models";
 
 type HomeData = { tree: Tree; wish: Wish | null };
@@ -19,6 +21,7 @@ const seasonNames: Record<Tree["season"], string> = {
 export function HomeScreen() {
   const router = useRouter();
   const [data, setData] = useState<HomeData | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -41,7 +44,7 @@ export function HomeScreen() {
           return;
         }
 
-        const profileSnapshot = await firestore.getDoc(
+        const profileSnapshot = await firestore.getDocFromServer(
           firestore.doc(db, "users", user.uid),
         );
         const activeTreeId = profileSnapshot.data()?.activeTreeId;
@@ -51,7 +54,7 @@ export function HomeScreen() {
           return;
         }
 
-        const treeSnapshot = await firestore.getDoc(
+        const treeSnapshot = await firestore.getDocFromServer(
           firestore.doc(db, "trees", String(activeTreeId)),
         );
 
@@ -61,7 +64,7 @@ export function HomeScreen() {
         }
 
         const tree = treeSnapshot.data() as Tree;
-        const wishSnapshot = await firestore.getDoc(
+        const wishSnapshot = await firestore.getDocFromServer(
           firestore.doc(db, "wishes", tree.wishId),
         );
 
@@ -82,7 +85,7 @@ export function HomeScreen() {
       cancelled = true;
       unsubscribe?.();
     };
-  }, [router]);
+  }, [refreshKey, router]);
 
   if (!data) {
     return (
@@ -108,17 +111,13 @@ export function HomeScreen() {
         </span>
       </header>
 
-      <section className="border-forest/10 relative mt-8 flex min-h-80 flex-col items-center justify-center rounded-[2.5rem] border bg-white/45 px-8 py-12 text-center shadow-sm backdrop-blur-md">
-        <div className="bg-canopy/10 flex size-28 items-center justify-center rounded-full">
-          <Leaf className="text-canopy size-12" strokeWidth={1.4} />
-        </div>
-        <p className="text-canopy mt-7 text-xs tracking-[0.22em]">SEED</p>
-        <p className="text-forest mt-3 font-serif text-2xl">
-          첫 씨앗이 조용히 숨 쉬고 있어요.
-        </p>
-        <p className="text-sub mt-3 text-sm">
-          기록으로 물을 주면 조금씩 자라납니다.
-        </p>
+      <section className="border-forest/10 relative mt-8 flex min-h-80 flex-col items-center justify-center rounded-[2.5rem] border bg-white/45 px-5 py-8 text-center shadow-sm backdrop-blur-md sm:px-8">
+        <TreeRenderer
+          cheerCount={data.tree.growth.cheerCount}
+          season={data.tree.season}
+          seed={data.tree.seed}
+          waterCount={data.tree.growth.waterCount}
+        />
       </section>
 
       {data.wish && (
@@ -136,6 +135,14 @@ export function HomeScreen() {
         <span>물 준 날 {data.tree.growth.waterCount}일</span>
         <span>햇살 {data.tree.growth.cheerCount}개</span>
       </div>
+
+      <WaterJournalForm
+        onWatered={() => {
+          setData(null);
+          setRefreshKey((value) => value + 1);
+        }}
+        treeId={data.tree.treeId}
+      />
     </main>
   );
 }
