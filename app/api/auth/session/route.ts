@@ -6,6 +6,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
 } from "@/lib/auth/constants";
 import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
+import { createFirebaseSessionCookie } from "@/lib/firebase/session-cookie";
 
 const bodySchema = z.object({ idToken: z.string().min(1) });
 
@@ -45,9 +46,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, {
-      expiresIn: SESSION_MAX_AGE_SECONDS * 1000,
-    });
+    const sessionCookie = await createFirebaseSessionCookie(
+      parsed.data.idToken,
+      SESSION_MAX_AGE_SECONDS,
+    );
     const response = NextResponse.json({ ok: true });
 
     response.cookies.set(SESSION_COOKIE_NAME, sessionCookie, {
@@ -59,7 +61,16 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch {
+  } catch (error) {
+    const code =
+      typeof error === "object" && error && "code" in error
+        ? String(error.code)
+        : "unknown";
+    const message =
+      error instanceof Error ? error.message : "Unknown session error";
+
+    console.error("Firebase session creation failed", { code, message });
+
     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 }
