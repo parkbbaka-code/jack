@@ -25,10 +25,12 @@ export function WaterJournalForm({
   treeId,
   onWatered,
   journals,
+  isGrowing,
 }: {
   treeId: string;
   onWatered: () => void;
   journals: Journal[];
+  isGrowing: boolean;
 }) {
   const [text, setText] = useState("");
   const [mood, setMood] = useState<(typeof moods)[number]["id"]>("calm");
@@ -91,7 +93,7 @@ export function WaterJournalForm({
             {todayJournal.waterCountAfter}회
           </p>
         </div>
-      ) : (
+      ) : isGrowing ? (
         <form className="mt-5" onSubmit={handleSubmit}>
           <textarea
             className="border-forest/15 text-forest placeholder:text-sub/45 focus:border-canopy min-h-28 w-full resize-none rounded-3xl border bg-white/65 px-5 py-4 leading-7 outline-none"
@@ -137,6 +139,13 @@ export function WaterJournalForm({
             </button>
           </div>
         </form>
+      ) : (
+        <div className="border-forest/10 mt-5 rounded-3xl border bg-white/45 px-5 py-4 text-center">
+          <p className="text-sub text-sm leading-6">
+            이 나무의 물 주기는 완성되었어요. 지금까지의 기록은 그대로
+            간직됩니다.
+          </p>
+        </div>
       )}
 
       {journals.length > 0 && (

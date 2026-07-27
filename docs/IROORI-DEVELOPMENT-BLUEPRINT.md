@@ -70,5 +70,6 @@ Zustand owns ephemeral UI state, and auth state is exposed through a provider.
 4. Deterministic SVG tree renderer — complete.
 5. Journal history and server-authoritative daily watering — complete.
 6. Growth display — complete.
-7. Bloom and fruit, then forest and cheers.
-8. Profile and essential settings.
+7. Server-authoritative bloom and flower visuals — complete.
+8. Fruit time capsule, then forest and cheers.
+9. Profile and essential settings.

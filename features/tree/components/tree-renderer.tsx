@@ -1,11 +1,12 @@
 import { calculateGrowth } from "@/features/tree/lib/growth";
-import type { Season } from "@/types/models";
+import type { Season, TreeStatus } from "@/types/models";
 
 interface TreeRendererProps {
   seed: number;
   season: Season;
   waterCount: number;
   cheerCount: number;
+  status: TreeStatus;
 }
 
 const palettes: Record<
@@ -60,8 +61,10 @@ export function TreeRenderer({
   season,
   waterCount,
   cheerCount,
+  status,
 }: TreeRendererProps) {
   const growth = calculateGrowth(waterCount);
+  const isBloomed = status === "bloomed" || status === "archived";
   const palette = palettes[season];
   const random = mulberry32(seed);
   const trunkHeight = 45 + growth.stageValue * 180;
@@ -103,11 +106,21 @@ export function TreeRenderer({
     cy: 70 + random() * 190,
     delay: `${(random() * 3).toFixed(2)}s`,
   }));
+  const flowers = Array.from({ length: isBloomed ? 18 : 0 }, (_, index) => ({
+    cx: 160 + Math.cos(random() * Math.PI * 2) * random() * crownRadius,
+    cy:
+      trunkTop +
+      18 +
+      Math.sin(random() * Math.PI * 2) * random() * crownRadius * 0.58,
+    color:
+      index % 3 === 0 ? "#f0c7cf" : index % 3 === 1 ? "#fff5e2" : "#d8b4c2",
+    rotation: random() * 60,
+  }));
 
   return (
     <figure className="flex w-full flex-col items-center">
       <svg
-        aria-label={`${stageNames[growth.stage]}, 성장 ${Math.round(growth.stageValue * 100)}퍼센트`}
+        aria-label={`${isBloomed ? "꽃이 핀 나무" : stageNames[growth.stage]}, 성장 ${Math.round(growth.stageValue * 100)}퍼센트`}
         className="h-auto w-full max-w-sm"
         role="img"
         viewBox="0 0 320 360"
@@ -187,6 +200,26 @@ export function TreeRenderer({
                 transform={`rotate(${leaf.rotation} ${leaf.cx} ${leaf.cy})`}
               />
             ))}
+            {flowers.map((flower, index) => (
+              <g
+                key={`flower-${index}`}
+                className="tree-flower"
+                transform={`translate(${flower.cx} ${flower.cy}) rotate(${flower.rotation})`}
+              >
+                {[0, 72, 144, 216, 288].map((angle) => (
+                  <ellipse
+                    key={angle}
+                    cx="0"
+                    cy="-5"
+                    fill={flower.color}
+                    rx="3.2"
+                    ry="5.5"
+                    transform={`rotate(${angle})`}
+                  />
+                ))}
+                <circle cx="0" cy="0" fill="#d4a94c" r="2.2" />
+              </g>
+            ))}
           </g>
         )}
 
@@ -204,10 +237,10 @@ export function TreeRenderer({
       </svg>
       <figcaption className="text-center">
         <p className="text-canopy text-xs tracking-[0.22em]">
-          {growth.stage.toUpperCase()}
+          {isBloomed ? "BLOOMED" : growth.stage.toUpperCase()}
         </p>
         <p className="text-forest mt-2 font-serif text-2xl">
-          {stageNames[growth.stage]}
+          {isBloomed ? "꽃이 핀 나무" : stageNames[growth.stage]}
         </p>
         <p className="text-sub mt-2 text-sm">
           성장 {Math.round(growth.stageValue * 100)}% · 물 {growth.waterCount}회

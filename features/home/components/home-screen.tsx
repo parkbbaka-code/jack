@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { WaterJournalForm } from "@/features/journal/components/water-journal-form";
+import { BloomCard } from "@/features/tree/components/bloom-card";
 import { TreeRenderer } from "@/features/tree/components/tree-renderer";
 import type { Journal, Tree, Wish } from "@/types/models";
 
@@ -127,6 +128,7 @@ export function HomeScreen() {
           cheerCount={data.tree.growth.cheerCount}
           season={data.tree.season}
           seed={data.tree.seed}
+          status={data.tree.status}
           waterCount={data.tree.growth.waterCount}
         />
       </section>
@@ -147,7 +149,16 @@ export function HomeScreen() {
         <span>햇살 {data.tree.growth.cheerCount}개</span>
       </div>
 
+      <BloomCard
+        onBloomed={() => {
+          setData(null);
+          setRefreshKey((value) => value + 1);
+        }}
+        tree={data.tree}
+      />
+
       <WaterJournalForm
+        isGrowing={data.tree.status === "growing"}
         journals={data.journals}
         onWatered={() => {
           setData(null);

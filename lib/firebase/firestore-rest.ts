@@ -1,5 +1,6 @@
-import { calculateGrowth } from "@/features/tree/lib/growth";
 import { getKoreanDateId } from "@/features/journal/lib/date";
+import { canBloomTree } from "@/features/tree/lib/bloom";
+import { calculateGrowth } from "@/features/tree/lib/growth";
 import { getFirebaseServiceAccount } from "@/lib/firebase/credentials";
 import { getGoogleAccessToken } from "@/lib/firebase/google-access-token";
 
@@ -24,6 +25,20 @@ export class WateringError extends Error {
       | "forbidden"
       | "already-watered"
       | "not-growing"
+      | "service-error",
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export class BloomError extends Error {
+  constructor(
+    public readonly reason:
+      | "not-found"
+      | "forbidden"
+      | "not-ready"
+      | "already-bloomed"
       | "service-error",
     message: string,
   ) {
@@ -209,6 +224,102 @@ export async function waterTreeWithJournal(input: {
     }
 
     return { journalId, growth: nextGrowth };
+  } catch (error) {
+    await rollbackTransaction(databaseName, transaction);
+    throw error;
+  }
+}
+
+export async function bloomTree(input: { ownerId: string; treeId: string }) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const treeName = `${databaseName}/documents/trees/${input.treeId}`;
+  const beginResponse = await authorizedFirestoreFetch(
+    `${databaseName}/documents:beginTransaction`,
+    { method: "POST", body: JSON.stringify({ options: { readWrite: {} } }) },
+  );
+  const beginResult: unknown = await beginResponse.json();
+  const transaction =
+    typeof beginResult === "object" &&
+    beginResult &&
+    "transaction" in beginResult
+      ? String(beginResult.transaction)
+      : undefined;
+
+  if (!beginResponse.ok || !transaction) {
+    throw new BloomError("service-error", "Could not begin transaction.");
+  }
+
+  try {
+    const treeResponse = await authorizedFirestoreFetch(
+      `${treeName}?transaction=${encodeURIComponent(transaction)}`,
+    );
+
+    if (treeResponse.status === 404) {
+      throw new BloomError("not-found", "Tree not found.");
+    }
+
+    const tree = (await treeResponse.json()) as FirestoreDocument;
+
+    if (!treeResponse.ok || !tree.updateTime) {
+      throw new BloomError("service-error", "Could not read tree.");
+    }
+
+    if (getStringField(tree, "ownerId") !== input.ownerId) {
+      throw new BloomError("forbidden", "Tree owner does not match.");
+    }
+
+    const status = getStringField(tree, "status");
+
+    if (status === "bloomed" || status === "archived") {
+      throw new BloomError("already-bloomed", "Tree already bloomed.");
+    }
+
+    const waterCount = getInteger(getGrowthFields(tree)?.waterCount);
+
+    if (status !== "growing" || !canBloomTree("growing", waterCount)) {
+      throw new BloomError("not-ready", "Tree is not ready to bloom.");
+    }
+
+    const timestamp = new Date().toISOString();
+    const commitResponse = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: treeName,
+                fields: {
+                  status: { stringValue: "bloomed" },
+                  growth: {
+                    mapValue: {
+                      fields: { bloomedAt: { timestampValue: timestamp } },
+                    },
+                  },
+                  updatedAt: { timestampValue: timestamp },
+                },
+              },
+              updateMask: {
+                fieldPaths: ["status", "growth.bloomedAt", "updatedAt"],
+              },
+              currentDocument: { updateTime: tree.updateTime },
+            },
+          ],
+        }),
+      },
+    );
+
+    if (!commitResponse.ok) {
+      throw new BloomError(
+        "service-error",
+        `Firestore bloom commit failed (${commitResponse.status}).`,
+      );
+    }
+
+    return { bloomedAt: timestamp, status: "bloomed" as const };
   } catch (error) {
     await rollbackTransaction(databaseName, transaction);
     throw error;
