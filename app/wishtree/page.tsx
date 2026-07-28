@@ -1,9 +1,36 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 
 import { HungWishArrival } from "@/features/wishes/components/hung-wish-arrival";
+import { WishTreeExperience } from "@/features/wishes/components/wish-tree-experience";
+import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
+import {
+  getWishTreeStats,
+  listRecentWishes,
+} from "@/lib/firebase/firestore-rest";
+import { verifySession } from "@/lib/firebase/session";
 
-export default function WishTreePage() {
+export const dynamic = "force-dynamic";
+
+export default async function WishTreePage() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  const session = sessionCookie ? await verifySession(sessionCookie) : null;
+  const [wishes, stats] = await Promise.all([
+    listRecentWishes(session?.uid ?? null).catch((error) => {
+      console.error("Recent wishes could not be loaded", error);
+      return [];
+    }),
+    getWishTreeStats().catch((error) => {
+      console.error("Wish tree stats could not be loaded", error);
+      return {
+        totalHung: 0,
+        totalFulfilled: 0,
+        pileCount: 0,
+      };
+    }),
+  ]);
+
   return (
     <main className="wish-night min-h-svh text-[#F6F2E9]">
       <Suspense fallback={null}>
@@ -24,26 +51,19 @@ export default function WishTreePage() {
           <p className="mt-3 text-base text-[#E8EDF7]">
             별빛 아래, 이루어진 소원들이 머무는 곳
           </p>
+          {stats.totalFulfilled > 0 ? (
+            <p className="mt-4 inline-flex rounded-full bg-[#0C1810]/60 px-4 py-2 text-xs text-[#F6F2E9]">
+              이 나무에서 {stats.totalFulfilled.toLocaleString("ko-KR")}개의
+              소원이 이루어졌어요
+            </p>
+          ) : null}
         </div>
       </section>
 
-      <section className="tree-scroll-panel tree-branch-panel">
-        <div className="tree-panel-copy">
-          <p className="wish-eyebrow">가지에 걸린 소원</p>
-          <p className="mt-3 text-base text-[#E8EDF7]">
-            이 나무에는 소원들이 조용히 흔들리고 있어요
-          </p>
-        </div>
-        <div className="tree-wish-grid" aria-label="가지에 걸린 소원지">
-          {Array.from({ length: 4 }, (_, index) => (
-            <span
-              aria-hidden
-              className={`tree-wish-object tree-wish-paper-${index}`}
-              key={index}
-            />
-          ))}
-        </div>
-      </section>
+      <WishTreeExperience
+        currentUserId={session?.uid ?? null}
+        initialWishes={wishes}
+      />
 
       <section className="tree-scroll-panel tree-trunk-panel">
         <div className="tree-panel-copy self-end">

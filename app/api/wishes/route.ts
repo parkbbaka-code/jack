@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
+import { isSameOrigin } from "@/lib/auth/api-session";
 import { createPublicWish, WishError } from "@/lib/firebase/firestore-rest";
 import { verifySession } from "@/lib/firebase/session";
 
@@ -10,19 +11,6 @@ const bodySchema = z.object({
   anonymous: z.boolean(),
   isPublic: z.boolean(),
 });
-
-function isSameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const host = request.headers.get("host");
-
-  if (!origin || !host) return false;
-
-  try {
-    return new URL(origin).host === host;
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {

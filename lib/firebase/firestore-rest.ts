@@ -3,19 +3,133 @@ import { getGoogleAccessToken } from "@/lib/firebase/google-access-token";
 import {
   EDIT_WINDOW_MIN,
   PAPER_TTL_DAYS,
+  RECENT_LIMIT,
+  REPORT_THRESHOLD,
   TEXT_LIMIT,
 } from "@/constants/wishes";
 import { assignWishSlot } from "@/lib/wishes/slots";
+import type { WishTreeStatsView, WishView } from "@/types/models";
 import { nanoid } from "nanoid";
 
 export class WishError extends Error {
   constructor(
     public readonly reason:
-      "free-paper-used" | "not-found" | "forbidden" | "service-error",
+      | "free-paper-used"
+      | "duplicate-report"
+      | "not-found"
+      | "forbidden"
+      | "service-error",
     message: string,
   ) {
     super(message);
   }
+}
+
+type FirestoreValue = {
+  stringValue?: string;
+  booleanValue?: boolean;
+  integerValue?: string;
+  doubleValue?: number;
+  timestampValue?: string;
+  nullValue?: null;
+  mapValue?: { fields?: Record<string, FirestoreValue> };
+};
+
+type FirestoreDocument = {
+  name?: string;
+  fields?: Record<string, FirestoreValue>;
+};
+
+function stringField(fields: Record<string, FirestoreValue>, key: string) {
+  return fields[key]?.stringValue ?? "";
+}
+
+function numberField(fields: Record<string, FirestoreValue>, key: string) {
+  const value = fields[key];
+  return Number(value?.integerValue ?? value?.doubleValue ?? 0);
+}
+
+function booleanField(fields: Record<string, FirestoreValue>, key: string) {
+  return fields[key]?.booleanValue ?? false;
+}
+
+function nullableStringField(
+  fields: Record<string, FirestoreValue>,
+  key: string,
+) {
+  return fields[key]?.nullValue === null
+    ? null
+    : (fields[key]?.stringValue ?? null);
+}
+
+function wishFromDocument(
+  document: FirestoreDocument,
+  viewerId: string | null,
+): WishView | null {
+  const fields = document.fields;
+  if (!fields) return null;
+
+  const wishId = stringField(fields, "wishId");
+  const ownerId = stringField(fields, "ownerId");
+  const slotFields = fields.slot?.mapValue?.fields;
+  const expiresAt = fields.expiresAt?.timestampValue;
+  const isPublic = booleanField(fields, "isPublic");
+
+  if (
+    !wishId ||
+    !ownerId ||
+    !slotFields ||
+    !expiresAt ||
+    new Date(expiresAt).getTime() <= Date.now()
+  ) {
+    return null;
+  }
+
+  const canReadText = isPublic || viewerId === ownerId;
+
+  return {
+    wishId,
+    ownerId,
+    displayName: canReadText
+      ? nullableStringField(fields, "displayName")
+      : null,
+    text: canReadText ? stringField(fields, "text") : "",
+    tier: "paper",
+    isPublic,
+    anonymous: booleanField(fields, "anonymous"),
+    fulfilled: booleanField(fields, "fulfilled"),
+    slot: {
+      x: numberField(slotFields, "x"),
+      y: numberField(slotFields, "y"),
+      rot: numberField(slotFields, "rot"),
+    },
+    shareId: stringField(fields, "shareId"),
+    createdAt: fields.createdAt?.timestampValue ?? new Date(0).toISOString(),
+  };
+}
+
+async function beginTransaction(databaseName: string) {
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents:beginTransaction`,
+    {
+      method: "POST",
+      body: JSON.stringify({ options: { readWrite: {} } }),
+    },
+  );
+  const result = (await response.json()) as { transaction?: string };
+
+  if (!response.ok || !result.transaction) {
+    throw new WishError("service-error", "Could not begin transaction.");
+  }
+
+  return result.transaction;
+}
+
+async function rollbackTransaction(databaseName: string, transaction: string) {
+  await authorizedFirestoreFetch(`${databaseName}/documents:rollback`, {
+    method: "POST",
+    body: JSON.stringify({ transaction }),
+  }).catch(() => undefined);
 }
 
 async function authorizedFirestoreFetch(path: string, init?: RequestInit) {
@@ -178,5 +292,282 @@ export async function createPublicWish(input: {
         body: JSON.stringify({ transaction }),
       }).catch(() => undefined);
     }
+  }
+}
+
+export async function listRecentWishes(
+  viewerId: string | null,
+): Promise<WishView[]> {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents:runQuery`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "wishes" }],
+          where: {
+            compositeFilter: {
+              op: "AND",
+              filters: [
+                {
+                  fieldFilter: {
+                    field: { fieldPath: "hidden" },
+                    op: "EQUAL",
+                    value: { booleanValue: false },
+                  },
+                },
+                {
+                  unaryFilter: {
+                    field: { fieldPath: "takenDownAt" },
+                    op: "IS_NULL",
+                  },
+                },
+              ],
+            },
+          },
+          orderBy: [
+            { field: { fieldPath: "createdAt" }, direction: "DESCENDING" },
+          ],
+          limit: RECENT_LIMIT,
+        },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new WishError("service-error", "Could not list wishes.");
+  }
+
+  const rows = (await response.json()) as Array<{
+    document?: FirestoreDocument;
+  }>;
+
+  return rows
+    .map((row) =>
+      row.document ? wishFromDocument(row.document, viewerId) : null,
+    )
+    .filter((wish): wish is WishView => wish !== null);
+}
+
+export async function getWishTreeStats(): Promise<WishTreeStatsView> {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents/stats/wishtree`,
+  );
+
+  if (response.status === 404) {
+    return { totalHung: 0, totalFulfilled: 0, pileCount: 0 };
+  }
+  if (!response.ok) {
+    throw new WishError("service-error", "Could not read wish tree stats.");
+  }
+
+  const document = (await response.json()) as FirestoreDocument;
+  const fields = document.fields ?? {};
+  return {
+    totalHung: numberField(fields, "totalHung"),
+    totalFulfilled: numberField(fields, "totalFulfilled"),
+    pileCount: numberField(fields, "pileCount"),
+  };
+}
+
+async function readWishInTransaction(
+  databaseName: string,
+  wishId: string,
+  transaction: string,
+) {
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents/wishes/${encodeURIComponent(wishId)}?transaction=${encodeURIComponent(transaction)}`,
+  );
+
+  if (response.status === 404) {
+    throw new WishError("not-found", "Wish not found.");
+  }
+  if (!response.ok) {
+    throw new WishError("service-error", "Could not read wish.");
+  }
+
+  return (await response.json()) as FirestoreDocument;
+}
+
+export async function reportWish(input: {
+  wishId: string;
+  reporterId: string;
+}) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const transaction = await beginTransaction(databaseName);
+  let committed = false;
+
+  try {
+    const wish = await readWishInTransaction(
+      databaseName,
+      input.wishId,
+      transaction,
+    );
+    const reportName = `${databaseName}/documents/wishes/${input.wishId}/reports/${input.reporterId}`;
+    const reportResponse = await authorizedFirestoreFetch(
+      `${reportName}?transaction=${encodeURIComponent(transaction)}`,
+    );
+
+    if (reportResponse.ok) {
+      throw new WishError("duplicate-report", "Wish already reported.");
+    }
+    if (reportResponse.status !== 404) {
+      throw new WishError("service-error", "Could not read report.");
+    }
+
+    const reportCount = numberField(wish.fields ?? {}, "reportCount") + 1;
+    const hidden = reportCount >= REPORT_THRESHOLD;
+    const timestamp = new Date().toISOString();
+    const response = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: reportName,
+                fields: { createdAt: { timestampValue: timestamp } },
+              },
+              currentDocument: { exists: false },
+            },
+            {
+              update: {
+                name: `${databaseName}/documents/wishes/${input.wishId}`,
+                fields: {
+                  reportCount: { integerValue: String(reportCount) },
+                  hidden: { booleanValue: hidden },
+                },
+              },
+              updateMask: { fieldPaths: ["reportCount", "hidden"] },
+            },
+          ],
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new WishError("service-error", "Could not report wish.");
+    }
+
+    committed = true;
+    return { reportCount, hidden };
+  } finally {
+    if (!committed) await rollbackTransaction(databaseName, transaction);
+  }
+}
+
+export async function takeDownWish(input: { wishId: string; ownerId: string }) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const transaction = await beginTransaction(databaseName);
+  let committed = false;
+
+  try {
+    const wish = await readWishInTransaction(
+      databaseName,
+      input.wishId,
+      transaction,
+    );
+    if (stringField(wish.fields ?? {}, "ownerId") !== input.ownerId) {
+      throw new WishError("forbidden", "Only the owner can take down a wish.");
+    }
+
+    const response = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: `${databaseName}/documents/wishes/${input.wishId}`,
+                fields: {
+                  takenDownAt: { timestampValue: new Date().toISOString() },
+                },
+              },
+              updateMask: { fieldPaths: ["takenDownAt"] },
+            },
+          ],
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new WishError("service-error", "Could not take down wish.");
+    }
+
+    committed = true;
+  } finally {
+    if (!committed) await rollbackTransaction(databaseName, transaction);
+  }
+}
+
+export async function updateWishPrivacy(input: {
+  wishId: string;
+  ownerId: string;
+  displayName: string;
+  isPublic: boolean;
+  anonymous: boolean;
+}) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const transaction = await beginTransaction(databaseName);
+  let committed = false;
+
+  try {
+    const wish = await readWishInTransaction(
+      databaseName,
+      input.wishId,
+      transaction,
+    );
+    if (stringField(wish.fields ?? {}, "ownerId") !== input.ownerId) {
+      throw new WishError("forbidden", "Only the owner can update a wish.");
+    }
+
+    const response = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: `${databaseName}/documents/wishes/${input.wishId}`,
+                fields: {
+                  isPublic: { booleanValue: input.isPublic },
+                  anonymous: { booleanValue: input.anonymous },
+                  displayName: input.anonymous
+                    ? { nullValue: null }
+                    : { stringValue: input.displayName.slice(0, 60) },
+                },
+              },
+              updateMask: {
+                fieldPaths: ["isPublic", "anonymous", "displayName"],
+              },
+            },
+          ],
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new WishError("service-error", "Could not update wish.");
+    }
+
+    committed = true;
+    return {
+      isPublic: input.isPublic,
+      anonymous: input.anonymous,
+      displayName: input.anonymous ? null : input.displayName.slice(0, 60),
+    };
+  } finally {
+    if (!committed) await rollbackTransaction(databaseName, transaction);
   }
 }

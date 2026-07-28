@@ -57,3 +57,23 @@ export interface WishLite {
   fulfilled: boolean;
   slot: WishSlot;
 }
+
+export interface WishView {
+  wishId: string;
+  ownerId: string;
+  displayName: string | null;
+  text: string;
+  tier: "paper";
+  isPublic: boolean;
+  anonymous: boolean;
+  fulfilled: boolean;
+  slot: WishSlot;
+  shareId: string;
+  createdAt: string;
+}
+
+export interface WishTreeStatsView {
+  totalHung: number;
+  totalFulfilled: number;
+  pileCount: number;
+}
