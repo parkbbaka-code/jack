@@ -308,9 +308,10 @@ a {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: min(100svh, 880px);
+  min-height: 100svh;
   padding: 2rem 1.25rem;
-  position: relative;
+  position: sticky;
+  top: 0;
 }
 
 .tree-scroll-panel::before {
@@ -329,15 +330,20 @@ a {
 
 .tree-canopy-panel {
   background-color: #172947;
+  z-index: 1;
 }
 
 .tree-branch-panel {
   background-color: #172947;
+  box-shadow: 0 -28px 60px rgb(4 10 18 / 30%);
+  z-index: 2;
 }
 
 .tree-trunk-panel {
   background-color: #101d18;
+  box-shadow: 0 -28px 60px rgb(4 10 18 / 34%);
   overflow: hidden;
+  z-index: 3;
 }
 
 .tree-panel-copy {
@@ -442,7 +448,7 @@ a {
 
 @media (min-width: 768px) {
   .tree-scroll-panel {
-    min-height: min(100svh, 1000px);
+    min-height: 100svh;
     padding: 3rem max(2.5rem, calc((100vw - 900px) / 2));
   }
 
@@ -450,5 +456,11 @@ a {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: auto 8% auto 24%;
     max-width: 760px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-scroll-panel {
+    position: relative;
   }
 }
