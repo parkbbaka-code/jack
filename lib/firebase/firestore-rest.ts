@@ -617,9 +617,6 @@ async function queryOwnedWishDocuments(ownerId: string, limit?: number) {
               value: { stringValue: ownerId },
             },
           },
-          orderBy: [
-            { field: { fieldPath: "createdAt" }, direction: "DESCENDING" },
-          ],
           ...(limit ? { limit } : {}),
         },
       }),
@@ -640,7 +637,12 @@ export async function listMyWishes(ownerId: string): Promise<MyWishView[]> {
   const documents = await queryOwnedWishDocuments(ownerId, 100);
   return documents
     .map(myWishFromDocument)
-    .filter((wish): wish is MyWishView => wish !== null);
+    .filter((wish): wish is MyWishView => wish !== null)
+    .sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() -
+        new Date(left.createdAt).getTime(),
+    );
 }
 
 export async function updateWishFulfilled(input: {
