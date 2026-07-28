@@ -156,3 +156,297 @@ a {
     animation: none;
   }
 }
+
+.wish-night {
+  background:
+    radial-gradient(
+      circle at 68% 14%,
+      rgb(232 237 247 / 18%),
+      transparent 18rem
+    ),
+    linear-gradient(180deg, #0b1a3a 0%, #1e3a6e 46%, #0c1810 100%);
+}
+
+.wish-tree-scene {
+  background:
+    linear-gradient(180deg, rgb(11 26 58 / 28%), rgb(12 24 16 / 28%)),
+    url("/images/iroori-wish-tree-warm-v5.png") center / cover no-repeat,
+    linear-gradient(180deg, #0b1a3a 0%, #1e3a6e 46%, #0c1810 100%);
+}
+
+.wish-tree-scene::before {
+  background:
+    radial-gradient(circle at 12% 18%, #e8edf7 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 11%, #e8edf7 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 38%, #e8edf7 0 1px, transparent 2px),
+    radial-gradient(circle at 34% 8%, #e8edf7 0 1px, transparent 2px);
+  content: "";
+  inset: 0;
+  opacity: 0.16;
+  pointer-events: none;
+  position: absolute;
+}
+
+.wish-eyebrow {
+  color: #c6a24e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+
+.wish-title {
+  color: #f6f2e9;
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+.wish-copy {
+  color: #e8edf7;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.wish-gold-button,
+.wish-ghost-button {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 1rem;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+}
+
+.wish-gold-button {
+  background: #c6a24e;
+  box-shadow: 0 0 28px rgb(198 162 78 / 28%);
+  color: #0c1810;
+}
+
+.wish-ghost-button {
+  border: 1px solid rgb(246 242 233 / 50%);
+  color: #f6f2e9;
+}
+
+.wish-icon-button {
+  align-items: center;
+  border: 1px solid rgb(246 242 233 / 30%);
+  border-radius: 999px;
+  display: inline-flex;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.wish-paper,
+.wish-hanging-paper {
+  background: #f6f2e9;
+  box-shadow: 0 14px 24px rgb(0 0 0 / 24%);
+}
+
+.wish-paper {
+  color: #3e2b1f;
+  transform: rotate(-1deg);
+}
+
+.wish-canopy {
+  background:
+    radial-gradient(
+      ellipse at 50% 55%,
+      transparent 0 26%,
+      #4a3f7a 27% 42%,
+      transparent 43%
+    ),
+    radial-gradient(ellipse at 35% 42%, #1c3a28 0 25%, transparent 26%),
+    radial-gradient(ellipse at 70% 48%, #1e3a6e 0 28%, transparent 29%);
+  inset: 13% -8% 9%;
+  opacity: 0.8;
+  pointer-events: none;
+  position: absolute;
+}
+
+.wish-hanging-paper {
+  color: #3e2b1f;
+  font-family: var(--font-serif), Georgia, serif;
+  min-height: 116px;
+  padding: 1rem;
+  position: relative;
+  transform: rotate(-4deg);
+}
+
+.wish-hanging-paper::before {
+  background: #c6a24e;
+  content: "";
+  height: 24px;
+  left: 50%;
+  position: absolute;
+  top: -24px;
+  width: 1px;
+}
+
+.wish-hanging-paper p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.wish-hanging-paper span {
+  bottom: 0.7rem;
+  color: #5e6b5a;
+  font-family: sans-serif;
+  font-size: 0.75rem;
+  position: absolute;
+}
+
+.wish-paper-1,
+.wish-paper-3 {
+  transform: rotate(4deg) translateY(20px);
+}
+
+.tree-scroll-panel {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: min(100svh, 880px);
+  padding: 2rem 1.25rem;
+  position: relative;
+}
+
+.tree-scroll-panel::before {
+  background: linear-gradient(
+    180deg,
+    rgb(11 26 58 / 35%),
+    transparent 42%,
+    rgb(12 24 16 / 34%)
+  );
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.tree-canopy-panel {
+  background-image: url("/images/tree-layers-warm-v5/canopy.webp");
+}
+
+.tree-branch-panel {
+  background-image: url("/images/tree-layers-warm-v5/branch.webp");
+}
+
+.tree-trunk-panel {
+  background-image: url("/images/tree-layers-warm-v5/trunk.webp");
+}
+
+.tree-panel-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.tree-wish-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: auto 0;
+  position: relative;
+  z-index: 1;
+}
+
+.tree-wish-object {
+  align-self: center;
+  aspect-ratio: 0.67;
+  background: url("/images/wish-objects/paper2.png") center / contain no-repeat;
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 28%));
+  position: relative;
+  transform: rotate(-4deg);
+}
+
+.tree-wish-paper-1,
+.tree-wish-paper-3 {
+  transform: rotate(4deg) translateY(1.5rem);
+}
+
+.obang-ribbons {
+  bottom: 10%;
+  display: flex;
+  gap: 0.25rem;
+  left: 4%;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.obang-ribbon {
+  background: center / contain no-repeat;
+  display: block;
+  filter: drop-shadow(0 0 5px rgb(232 237 247 / 40%));
+  height: 11rem;
+  position: relative;
+  width: 4.5rem;
+}
+
+.obang-tag-text {
+  color: #3e2b1f;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 0.56rem;
+  left: 50%;
+  line-height: 1.25;
+  max-width: 2.3rem;
+  position: absolute;
+  text-align: center;
+  top: 57%;
+  transform: translateX(-50%);
+}
+
+.obang-cheong {
+  background-image: url("/images/wish-objects/obang-tag/ribbon-tag-cheong.png");
+}
+
+.obang-baek {
+  background-image: url("/images/wish-objects/obang-tag/ribbon-tag-baek.png");
+}
+
+.obang-jeok {
+  background-image: url("/images/wish-objects/obang-tag/ribbon-tag-jeok.png");
+}
+
+.obang-heuk {
+  background-image: url("/images/wish-objects/obang-tag/ribbon-tag-heuk.png");
+}
+
+.obang-hwang {
+  background-image: url("/images/wish-objects/obang-tag/ribbon-tag-hwang.png");
+}
+
+.stone-cairn {
+  background: url("/images/wish-objects/stone-cairn-v2.png") center / contain
+    no-repeat;
+  bottom: 1.5rem;
+  height: 8rem;
+  left: 0;
+  position: absolute;
+  width: 8rem;
+}
+
+.wish-stone {
+  background: url("/images/wish-objects/stone-v2.png") center / contain
+    no-repeat;
+  bottom: 1rem;
+  height: 3.5rem;
+  left: 7rem;
+  position: absolute;
+  width: 4rem;
+}
+
+@media (min-width: 768px) {
+  .tree-scroll-panel {
+    min-height: min(100svh, 1000px);
+    padding: 3rem max(2.5rem, calc((100vw - 900px) / 2));
+  }
+
+  .tree-wish-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: auto 8% auto 24%;
+    max-width: 760px;
+  }
+}

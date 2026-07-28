@@ -1,0 +1,63 @@
+.overlay {
+  align-items: center;
+  background:
+    linear-gradient(180deg, rgb(11 26 58 / 72%), rgb(12 24 16 / 58%)),
+    url("/images/tree-layers-warm-v5/branch.webp") center / cover no-repeat;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  z-index: 70;
+}
+
+.veil {
+  background: radial-gradient(circle, rgb(232 194 103 / 28%), transparent 58%);
+  inset: 0;
+  position: absolute;
+}
+
+.paper {
+  background: url("/images/wish-objects/paper2.png") center / contain no-repeat;
+  filter: drop-shadow(0 14px 18px rgb(0 0 0 / 38%));
+  height: 104px;
+  margin-left: -34px;
+  margin-top: -52px;
+  position: absolute;
+  transform-origin: 50% 0;
+  width: 68px;
+}
+
+.paper::before {
+  background: linear-gradient(180deg, transparent, #d4b76c);
+  content: "";
+  height: 48px;
+  left: 50%;
+  position: absolute;
+  top: -42px;
+  width: 1px;
+}
+
+.glow {
+  background: #e8c267;
+  border-radius: 999px;
+  box-shadow: 0 0 34px 12px rgb(232 194 103 / 55%);
+  height: 5px;
+  margin: -2px 0 0 -2px;
+  position: absolute;
+  width: 5px;
+}
+
+.message {
+  bottom: 9svh;
+  color: #f6f2e9;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.1rem;
+  left: 1.5rem;
+  letter-spacing: 0.04em;
+  position: absolute;
+  right: 1.5rem;
+  text-align: center;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 60%);
+}
