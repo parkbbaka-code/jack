@@ -5,7 +5,6 @@ import { LoaderCircle } from "lucide-react";
 
 type HandoffResponse = {
   customToken: string;
-  isNewUser: boolean;
   nextPath: string;
 };
 
@@ -33,6 +32,16 @@ export function KakaoLoginComplete() {
           getFirebaseClientServices().auth,
           handoff.customToken,
         );
+        const tokenResult = await credential.user.getIdTokenResult();
+        const displayName =
+          typeof tokenResult.claims.displayName === "string"
+            ? tokenResult.claims.displayName
+            : undefined;
+
+        if (displayName && credential.user.displayName !== displayName) {
+          await firebaseAuth.updateProfile(credential.user, { displayName });
+        }
+
         const idToken = await credential.user.getIdToken();
         const sessionResponse = await fetch("/api/auth/session", {
           method: "POST",

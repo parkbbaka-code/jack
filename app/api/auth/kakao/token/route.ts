@@ -3,7 +3,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   KAKAO_CUSTOM_TOKEN_COOKIE,
   KAKAO_HANDOFF_NEXT_COOKIE,
-  KAKAO_NEW_USER_COOKIE,
 } from "@/lib/auth/constants";
 import { getSafeNextPath } from "@/lib/auth/kakao";
 
@@ -33,7 +32,6 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({
     customToken,
-    isNewUser: request.cookies.get(KAKAO_NEW_USER_COOKIE)?.value === "1",
     nextPath: getSafeNextPath(
       request.cookies.get(KAKAO_HANDOFF_NEXT_COOKIE)?.value,
     ),
@@ -41,7 +39,6 @@ export async function POST(request: NextRequest) {
 
   for (const name of [
     KAKAO_CUSTOM_TOKEN_COOKIE,
-    KAKAO_NEW_USER_COOKIE,
     KAKAO_HANDOFF_NEXT_COOKIE,
   ]) {
     response.cookies.set(name, "", {

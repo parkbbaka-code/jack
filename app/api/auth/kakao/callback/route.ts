@@ -5,7 +5,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   KAKAO_CUSTOM_TOKEN_COOKIE,
   KAKAO_HANDOFF_NEXT_COOKIE,
-  KAKAO_NEW_USER_COOKIE,
   KAKAO_OAUTH_MAX_AGE_SECONDS,
   KAKAO_OAUTH_NEXT_COOKIE,
   KAKAO_OAUTH_STATE_COOKIE,
@@ -71,11 +70,10 @@ export async function GET(request: NextRequest) {
     const nextPath = getSafeNextPath(
       request.cookies.get(KAKAO_OAUTH_NEXT_COOKIE)?.value,
     );
-    const { customToken, isNewUser } =
-      await createFirebaseCustomTokenFromKakao({
-        code,
-        redirectUri: getKakaoRedirectUri(request.url),
-      });
+    const { customToken } = await createFirebaseCustomTokenFromKakao({
+      code,
+      redirectUri: getKakaoRedirectUri(request.url),
+    });
     const response = NextResponse.redirect(
       new URL("/login/kakao/complete", request.url),
     );
@@ -91,11 +89,6 @@ export async function GET(request: NextRequest) {
     response.cookies.set(
       KAKAO_CUSTOM_TOKEN_COOKIE,
       customToken,
-      handoffCookieOptions,
-    );
-    response.cookies.set(
-      KAKAO_NEW_USER_COOKIE,
-      isNewUser ? "1" : "0",
       handoffCookieOptions,
     );
     response.cookies.set(

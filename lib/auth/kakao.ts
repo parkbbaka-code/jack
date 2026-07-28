@@ -1,4 +1,4 @@
-import { getFirebaseAdminAuth } from "@/lib/firebase/admin";
+import { createFirebaseCustomToken } from "@/lib/firebase/custom-token";
 
 const KAKAO_AUTHORIZE_URL = "https://kauth.kakao.com/oauth/authorize";
 const KAKAO_TOKEN_URL = "https://kauth.kakao.com/oauth/token";
@@ -121,39 +121,10 @@ export async function createFirebaseCustomTokenFromKakao({
   const kakaoUser = await requestKakaoUser(accessToken);
   const uid = `kakao:${String(kakaoUser.id)}`;
   const displayName = getKakaoDisplayName(kakaoUser);
-  const auth = getFirebaseAdminAuth();
-  let isNewUser = false;
-
-  try {
-    const existing = await auth.getUser(uid);
-
-    if (existing.displayName !== displayName) {
-      await auth.updateUser(uid, { displayName });
-    }
-  } catch (error) {
-    const code =
-      typeof error === "object" && error && "code" in error
-        ? String(error.code)
-        : "";
-
-    if (code !== "auth/user-not-found") throw error;
-
-    try {
-      await auth.createUser({ uid, displayName });
-      isNewUser = true;
-    } catch (createError) {
-      const createCode =
-        typeof createError === "object" && createError && "code" in createError
-          ? String(createError.code)
-          : "";
-
-      if (createCode !== "auth/uid-already-exists") throw createError;
-    }
-  }
-
-  const customToken = await auth.createCustomToken(uid, {
+  const customToken = await createFirebaseCustomToken(uid, {
     authProvider: "kakao",
+    displayName,
   });
 
-  return { customToken, isNewUser };
+  return { customToken };
 }

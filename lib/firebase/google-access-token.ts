@@ -44,17 +44,10 @@ function decodePem(privateKey: string) {
   return bytes.buffer;
 }
 
-async function createServiceAccountAssertion() {
-  const { clientEmail, privateKey } = getFirebaseServiceAccount();
-  const nowSeconds = Math.floor(Date.now() / 1000);
+export async function signServiceAccountJwt(payload: object) {
+  const { privateKey } = getFirebaseServiceAccount();
   const encodedHeader = encodeJson({ alg: "RS256", typ: "JWT" });
-  const encodedPayload = encodeJson({
-    iss: clientEmail,
-    scope: FIREBASE_ADMIN_SCOPES,
-    aud: GOOGLE_OAUTH_TOKEN_URL,
-    iat: nowSeconds,
-    exp: nowSeconds + 60 * 60,
-  });
+  const encodedPayload = encodeJson(payload);
   const unsignedToken = `${encodedHeader}.${encodedPayload}`;
   const signingKey = await crypto.subtle.importKey(
     "pkcs8",
@@ -70,6 +63,19 @@ async function createServiceAccountAssertion() {
   );
 
   return `${unsignedToken}.${base64UrlEncode(new Uint8Array(signature))}`;
+}
+
+async function createServiceAccountAssertion() {
+  const { clientEmail } = getFirebaseServiceAccount();
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  return signServiceAccountJwt({
+    iss: clientEmail,
+    scope: FIREBASE_ADMIN_SCOPES,
+    aud: GOOGLE_OAUTH_TOKEN_URL,
+    iat: nowSeconds,
+    exp: nowSeconds + 60 * 60,
+  });
 }
 
 export async function getGoogleAccessToken() {
