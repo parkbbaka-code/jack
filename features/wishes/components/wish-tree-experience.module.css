@@ -2,8 +2,33 @@
   overflow: hidden;
 }
 
+.parallaxLayer {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  inset: -6% 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateZ(0);
+  will-change: transform;
+  z-index: 0;
+}
+
+.canopyLayer {
+  background-image: url("/images/tree-layers-warm-v5/canopy.webp");
+}
+
+.branchLayer {
+  background-image: url("/images/tree-layers-warm-v5/branch.webp");
+}
+
+.trunkLayer {
+  background-image: url("/images/tree-layers-warm-v5/trunk.webp");
+}
+
 .objects {
   inset: 0;
+  pointer-events: auto;
   position: absolute;
   z-index: 2;
 }

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 
 import { HungWishArrival } from "@/features/wishes/components/hung-wish-arrival";
+import { TreeTrunkPanel } from "@/features/wishes/components/tree-trunk-panel";
 import { WishTreeExperience } from "@/features/wishes/components/wish-tree-experience";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/constants";
 import {
@@ -77,19 +78,7 @@ export default async function WishTreePage({
         )}
       />
 
-      <section className="tree-scroll-panel tree-trunk-panel">
-        <div className="tree-panel-copy self-end">
-          <p className="wish-eyebrow">나무의 밑동</p>
-          <p className="mt-3 max-w-56 text-sm leading-6 text-[#E8EDF7]">
-            잎 사이 별빛이 비추는 밤, 소원은 이곳에 오래 머뭅니다.
-          </p>
-        </div>
-        <div className="relative z-10 flex items-end justify-end">
-          <Link className="wish-gold-button shrink-0" href="/wish/new">
-            소원 걸기
-          </Link>
-        </div>
-      </section>
+      <TreeTrunkPanel />
     </main>
   );
 }

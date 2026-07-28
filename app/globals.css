@@ -324,23 +324,25 @@ a {
   inset: 0;
   pointer-events: none;
   position: absolute;
+  z-index: 1;
 }
 
 .tree-canopy-panel {
-  background-image: url("/images/tree-layers-warm-v5/canopy.webp");
+  background-color: #172947;
 }
 
 .tree-branch-panel {
-  background-image: url("/images/tree-layers-warm-v5/branch.webp");
+  background-color: #172947;
 }
 
 .tree-trunk-panel {
-  background-image: url("/images/tree-layers-warm-v5/trunk.webp");
+  background-color: #101d18;
+  overflow: hidden;
 }
 
 .tree-panel-copy {
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .tree-wish-grid {

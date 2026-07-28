@@ -1,6 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -37,6 +43,17 @@ export function WishTreeExperience({
   const router = useRouter();
   const canopyRef = useRef<HTMLElement>(null);
   const branchRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress: canopyScroll } = useScroll({
+    target: canopyRef,
+    offset: ["start end", "end start"],
+  });
+  const { scrollYProgress: branchScroll } = useScroll({
+    target: branchRef,
+    offset: ["start end", "end start"],
+  });
+  const canopyY = useTransform(canopyScroll, [0, 1], [44, -44]);
+  const branchY = useTransform(branchScroll, [0, 1], [34, -34]);
   const [wishes, setWishes] = useState(initialWishes);
   const [selected, setSelected] = useState<WishView | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -198,6 +215,27 @@ export function WishTreeExperience({
         className={`tree-scroll-panel tree-canopy-panel ${styles.scene}`}
         ref={canopyRef}
       >
+        <motion.div
+          className={`${styles.parallaxLayer} ${styles.canopyLayer}`}
+          style={{ y: reduceMotion ? 0 : canopyY }}
+        >
+          <div className={styles.objects} aria-label="우듬지의 이루어진 소원지">
+            {fulfilledWishes.map((wish, index) =>
+              renderWish(wish, index, true),
+            )}
+            {focus?.fulfilled &&
+            !fulfilledWishes.some((wish) => wish.wishId === focus.wishId) ? (
+              <span
+                aria-label="찾은 내 소원지"
+                className={`${styles.paper} ${styles.fulfilledPaper} ${styles.focusedPaper}`}
+                style={{
+                  left: `${focus.x}%`,
+                  top: `${Math.max(18, focus.y - 18)}%`,
+                }}
+              />
+            ) : null}
+          </div>
+        </motion.div>
         <div className="tree-panel-copy">
           <p className="wish-eyebrow">소원나무</p>
           <p className="mt-3 text-base text-[#E8EDF7]">
@@ -210,44 +248,34 @@ export function WishTreeExperience({
             </p>
           ) : null}
         </div>
-        <div className={styles.objects} aria-label="우듬지의 이루어진 소원지">
-          {fulfilledWishes.map((wish, index) => renderWish(wish, index, true))}
-          {focus?.fulfilled &&
-          !fulfilledWishes.some((wish) => wish.wishId === focus.wishId) ? (
-            <span
-              aria-label="찾은 내 소원지"
-              className={`${styles.paper} ${styles.fulfilledPaper} ${styles.focusedPaper}`}
-              style={{
-                left: `${focus.x}%`,
-                top: `${Math.max(18, focus.y - 18)}%`,
-              }}
-            />
-          ) : null}
-        </div>
       </section>
 
       <section
         className={`tree-scroll-panel tree-branch-panel ${styles.scene}`}
         ref={branchRef}
       >
+        <motion.div
+          className={`${styles.parallaxLayer} ${styles.branchLayer}`}
+          style={{ y: reduceMotion ? 0 : branchY }}
+        >
+          <div className={styles.objects} aria-label="가지에 걸린 최근 소원지">
+            {branchWishes.map((wish, index) => renderWish(wish, index))}
+            {focus &&
+            !focus.fulfilled &&
+            !branchWishes.some((wish) => wish.wishId === focus.wishId) ? (
+              <span
+                aria-label="찾은 내 소원지"
+                className={`${styles.paper} ${styles.focusedPaper}`}
+                style={{ left: `${focus.x}%`, top: `${focus.y}%` }}
+              />
+            ) : null}
+          </div>
+        </motion.div>
         <div className="tree-panel-copy">
           <p className="wish-eyebrow">가지에 걸린 소원</p>
           <p className="mt-3 text-base text-[#E8EDF7]">
             소원지를 눌러 마음을 읽어보세요
           </p>
-        </div>
-
-        <div className={styles.objects} aria-label="가지에 걸린 최근 소원지">
-          {branchWishes.map((wish, index) => renderWish(wish, index))}
-          {focus &&
-          !focus.fulfilled &&
-          !branchWishes.some((wish) => wish.wishId === focus.wishId) ? (
-            <span
-              aria-label="찾은 내 소원지"
-              className={`${styles.paper} ${styles.focusedPaper}`}
-              style={{ left: `${focus.x}%`, top: `${focus.y}%` }}
-            />
-          ) : null}
         </div>
 
         {branchWishes.length === 0 && !focus ? (
