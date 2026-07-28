@@ -39,12 +39,12 @@ export default async function Home() {
         <div className={styles.heroContent}>
           <p className={styles.wordmark}>이루리</p>
           <h1 className={styles.headline}>
-            여기, 소원을
+            소원나무가
             <br />
-            걸고 가세요.
+            열렸습니다.
           </h1>
           <p className="mx-auto mt-7 max-w-md text-base leading-8 text-[#E8EDF7] sm:text-lg">
-            이루리 — 소원을 나무로 키우는 곳
+            당신의 소원을 기다리고 있습니다
           </p>
           <div className="mx-auto mt-10 flex max-w-sm flex-col gap-3">
             <Link className="wish-gold-button" href="/wish/new">
