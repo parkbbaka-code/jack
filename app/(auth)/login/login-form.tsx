@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -75,10 +75,27 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pendingAction, setPendingAction] = useState<
-    "google" | "email" | "reset" | null
+    "kakao" | "google" | "email" | "reset" | null
   >(null);
 
   const isPending = pendingAction !== null;
+
+  useEffect(() => {
+    const error = new URLSearchParams(window.location.search).get("error");
+
+    if (error === "kakao_cancelled") {
+      toast.info("카카오 로그인이 취소되었습니다.");
+    } else if (error?.startsWith("kakao_")) {
+      toast.error("카카오 로그인 중 문제가 생겼습니다. 다시 시도해주세요.");
+    }
+  }, []);
+
+  function handleKakaoSignIn() {
+    setPendingAction("kakao");
+    window.location.assign(
+      `/api/auth/kakao?next=${encodeURIComponent(getSafeNextPath())}`,
+    );
+  }
 
   async function handleGoogleSignIn() {
     setPendingAction("google");
@@ -139,7 +156,19 @@ export function LoginForm() {
   return (
     <div className="mt-8">
       <button
-        className="button-secondary w-full gap-2 disabled:cursor-wait disabled:opacity-60"
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FEE500] px-5 font-semibold text-[#191919] transition hover:bg-[#f5dc00] disabled:cursor-wait disabled:opacity-60"
+        disabled={isPending}
+        onClick={handleKakaoSignIn}
+        type="button"
+      >
+        {pendingAction === "kakao" && (
+          <LoaderCircle aria-hidden className="size-4 animate-spin" />
+        )}
+        카카오로 계속하기
+      </button>
+
+      <button
+        className="button-secondary mt-3 w-full gap-2 disabled:cursor-wait disabled:opacity-60"
         disabled={isPending}
         onClick={handleGoogleSignIn}
         type="button"
@@ -152,7 +181,7 @@ export function LoginForm() {
 
       <div className="my-6 flex items-center gap-3" role="separator">
         <span className="bg-forest/10 h-px flex-1" />
-        <span className="text-sub text-xs">또는 이메일로</span>
+        <span className="text-sub text-xs">또는 다른 방법으로</span>
         <span className="bg-forest/10 h-px flex-1" />
       </div>
 
