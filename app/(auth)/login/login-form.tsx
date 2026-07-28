@@ -52,7 +52,7 @@ function getSafeNextPath() {
   const candidate = new URLSearchParams(window.location.search).get("next");
 
   if (!candidate?.startsWith("/") || candidate.startsWith("//")) {
-    return "/home";
+    return "/wishtree";
   }
 
   return candidate;
