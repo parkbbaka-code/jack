@@ -1,9 +1,33 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 
 import { AppProviders } from "@/app/providers";
 import { SiteFooter } from "@/components/site-footer";
 
 import "./globals.css";
+
+const maruBuri = localFont({
+  display: "swap",
+  fallback: ["AppleMyungjo", "serif"],
+  src: [
+    {
+      path: "./fonts/MaruBuri-Regular.woff2",
+      style: "normal",
+      weight: "400",
+    },
+    {
+      path: "./fonts/MaruBuri-SemiBold.woff2",
+      style: "normal",
+      weight: "600",
+    },
+    {
+      path: "./fonts/MaruBuri-Bold.woff2",
+      style: "normal",
+      weight: "700",
+    },
+  ],
+  variable: "--font-maru-buri",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html className={maruBuri.variable} lang="ko">
       <body>
         <AppProviders>
           {children}
