@@ -6,6 +6,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { trackEvent } from "@/lib/analytics/client";
+
 type Step = "write" | "confirm";
 
 type CreateWishResponse = {
@@ -56,6 +58,7 @@ export function WriteWishForm() {
       if (!response.ok) throw new Error("wish-failed");
 
       const wish = (await response.json()) as CreateWishResponse;
+      trackEvent("paper_hung", { tier: "paper", isPaid: false });
       const query = new URLSearchParams({
         hung: "1",
         x: String(wish.slot.x),

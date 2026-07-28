@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { PREVIEW_LEN } from "@/constants/wishes";
+import { trackEvent } from "@/lib/analytics/client";
 import type { MyWishView } from "@/types/models";
 
 import styles from "./my-wishes.module.css";
@@ -89,6 +90,15 @@ export function MyWishes({ initialWishes }: { initialWishes: MyWishView[] }) {
         body: JSON.stringify({ fulfilled: !wish.fulfilled }),
       });
       if (!response.ok) throw new Error("fulfilled-update-failed");
+      if (!wish.fulfilled) {
+        const daysSinceHung = Math.max(
+          0,
+          Math.floor(
+            (Date.now() - new Date(wish.createdAt).getTime()) / 86_400_000,
+          ),
+        );
+        trackEvent("paper_fulfilled", { tier: "paper", daysSinceHung });
+      }
       const updated = { ...wish, fulfilled: !wish.fulfilled };
       setWishes((current) =>
         current.map((item) => (item.wishId === wish.wishId ? updated : item)),
@@ -127,6 +137,16 @@ export function MyWishes({ initialWishes }: { initialWishes: MyWishView[] }) {
         text: result.text,
         editCount: result.editCount,
       });
+      const minutesSinceHung = Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(selected.createdAt).getTime()) / 60_000,
+        ),
+      );
+      trackEvent("paper_edited", {
+        minutesSinceHung,
+        editCount: result.editCount,
+      });
       setEditing(false);
       setNotice("소원을 고쳤어요");
     } catch {
@@ -145,6 +165,13 @@ export function MyWishes({ initialWishes }: { initialWishes: MyWishView[] }) {
         method: "POST",
       });
       if (!response.ok) throw new Error("takedown-failed");
+      const daysSinceHung = Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(selected.createdAt).getTime()) / 86_400_000,
+        ),
+      );
+      trackEvent("paper_taken_down", { daysSinceHung });
       const updated = { ...selected, takenDownAt: new Date().toISOString() };
       setWishes((current) =>
         current.map((wish) =>
@@ -226,6 +253,7 @@ export function MyWishes({ initialWishes }: { initialWishes: MyWishView[] }) {
                             <Link
                               className={styles.actionLink}
                               href={`/wishtree?wish=${encodeURIComponent(wish.wishId)}&x=${wish.slot.x}&y=${wish.slot.y}&fulfilled=${wish.fulfilled ? "1" : "0"}`}
+                              onClick={() => trackEvent("mywish_located")}
                             >
                               나무에서 보기
                             </Link>
@@ -330,6 +358,7 @@ export function MyWishes({ initialWishes }: { initialWishes: MyWishView[] }) {
                   <Link
                     className={styles.sheetAction}
                     href={`/wishtree?wish=${encodeURIComponent(selected.wishId)}&x=${selected.slot.x}&y=${selected.slot.y}&fulfilled=${selected.fulfilled ? "1" : "0"}`}
+                    onClick={() => trackEvent("mywish_located")}
                   >
                     나무에서 보기
                   </Link>

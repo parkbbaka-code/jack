@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { trackEvent } from "@/lib/analytics/client";
 import type { WishView } from "@/types/models";
 
 import styles from "./wish-tree-experience.module.css";
@@ -40,6 +41,10 @@ export function WishTreeExperience({
   const [selected, setSelected] = useState<WishView | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    trackEvent("wishtree_viewed", { isAuthed: currentUserId !== null });
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!selected) return;
@@ -90,6 +95,7 @@ export function WishTreeExperience({
       setNotice("이 소원은 열리지 않아요");
       return;
     }
+    trackEvent("paper_opened", { isOwn: wish.ownerId === currentUserId });
     setSelected(wish);
   }
 
@@ -141,6 +147,7 @@ export function WishTreeExperience({
         return;
       }
       if (!response.ok) throw new Error("report-failed");
+      trackEvent("report_submitted");
       setNotice("신고가 접수됐어요");
       if (result.hidden) {
         setWishes((current) =>
@@ -166,6 +173,13 @@ export function WishTreeExperience({
         method: "POST",
       });
       if (!response.ok) throw new Error("takedown-failed");
+      const daysSinceHung = Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(selected.createdAt).getTime()) / 86_400_000,
+        ),
+      );
+      trackEvent("paper_taken_down", { daysSinceHung });
       setWishes((current) =>
         current.filter((wish) => wish.wishId !== selected.wishId),
       );

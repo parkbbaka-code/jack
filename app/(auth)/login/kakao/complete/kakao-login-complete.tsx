@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { LoaderCircle } from "lucide-react";
 
+import { trackEvent } from "@/lib/analytics/client";
+
 type HandoffResponse = {
   customToken: string;
   nextPath: string;
@@ -24,14 +26,15 @@ export function KakaoLoginComplete() {
         if (!handoffResponse.ok) throw new Error("kakao-handoff-failed");
 
         const handoff = (await handoffResponse.json()) as HandoffResponse;
-        const [{ getFirebaseClientServices }, firebaseAuth] = await Promise.all([
-          import("@/lib/firebase/client"),
-          import("firebase/auth"),
-        ]);
+        const [{ getFirebaseClientServices }, firebaseAuth] = await Promise.all(
+          [import("@/lib/firebase/client"), import("firebase/auth")],
+        );
         const credential = await firebaseAuth.signInWithCustomToken(
           getFirebaseClientServices().auth,
           handoff.customToken,
         );
+        const isNewUser =
+          firebaseAuth.getAdditionalUserInfo(credential)?.isNewUser;
         const tokenResult = await credential.user.getIdTokenResult();
         const displayName =
           typeof tokenResult.claims.displayName === "string"
@@ -51,6 +54,9 @@ export function KakaoLoginComplete() {
 
         if (!sessionResponse.ok) throw new Error("session-exchange-failed");
 
+        if (isNewUser) {
+          trackEvent("signup_completed", { provider: "kakao" });
+        }
         window.location.replace(handoff.nextPath);
       } catch {
         window.location.replace("/login?error=kakao_failed");

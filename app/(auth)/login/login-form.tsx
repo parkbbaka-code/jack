@@ -5,6 +5,8 @@ import type { User } from "firebase/auth";
 import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { trackEvent } from "@/lib/analytics/client";
+
 type Mode = "signin" | "signup";
 
 function getAuthErrorMessage(error: unknown) {
@@ -33,7 +35,11 @@ function getAuthErrorMessage(error: unknown) {
   );
 }
 
-async function createServerSession(user: User, nextPath: string) {
+async function createServerSession(
+  user: User,
+  nextPath: string,
+  signupProvider?: "google",
+) {
   const idToken = await user.getIdToken();
   const response = await fetch("/api/auth/session", {
     method: "POST",
@@ -45,6 +51,8 @@ async function createServerSession(user: User, nextPath: string) {
     throw new Error("session-exchange-failed");
   }
 
+  if (signupProvider)
+    trackEvent("signup_completed", { provider: signupProvider });
   window.location.assign(nextPath);
 }
 
@@ -105,7 +113,13 @@ export function LoginForm() {
       const provider = new firebaseAuth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       const credential = await firebaseAuth.signInWithPopup(auth, provider);
-      await createServerSession(credential.user, getSafeNextPath());
+      const isNewUser =
+        firebaseAuth.getAdditionalUserInfo(credential)?.isNewUser;
+      await createServerSession(
+        credential.user,
+        getSafeNextPath(),
+        isNewUser ? "google" : undefined,
+      );
     } catch (error) {
       toast.error(getAuthErrorMessage(error));
       setPendingAction(null);
