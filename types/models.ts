@@ -1,64 +1,59 @@
 import type { Timestamp } from "firebase/firestore";
 
-export type Visibility = "public" | "link" | "private";
-export type Season = "spring" | "summer" | "autumn" | "winter";
-export type TreeStatus = "growing" | "bloomed" | "archived";
-
-export interface GrowthState {
-  waterCount: number;
-  cheerCount: number;
-  stageValue: number;
-  bloomedAt: Timestamp | null;
-  lastLeafCount?: number;
-}
-
-export interface UserProfile {
-  userId: string;
-  email: string | null;
+export interface User {
+  uid: string;
   displayName: string | null;
+  email: string | null;
   photoURL: string | null;
-  activeTreeId: string | null;
-  onboardingCompleted: boolean;
+  provider: "kakao" | "google";
+  freePaperMonth: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+}
+
+export interface WishSlot {
+  x: number;
+  y: number;
+  rot: number;
 }
 
 export interface Wish {
   wishId: string;
   ownerId: string;
-  treeId: string;
+  displayName: string | null;
   text: string;
-  status: "active" | "fulfilled" | "archived";
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface Journal {
-  journalId: string;
-  ownerId: string;
-  treeId: string;
-  text: string;
-  mood: "calm" | "grateful" | "hopeful" | "tired";
-  waterCountAfter: number;
-  createdAt: Timestamp;
-}
-
-export interface Tree {
-  treeId: string;
-  ownerId: string;
-  wishId: string;
-  name: string;
-  scope: Visibility;
+  tier: "paper";
+  variant: null;
+  engraving: null;
+  isPublic: boolean;
   anonymous: boolean;
-  status: TreeStatus;
-  season: Season;
-  growth: GrowthState;
-  seed: number;
+  fulfilled: boolean;
+  fulfilledAt: Timestamp | null;
+  reportCount: number;
+  hidden: boolean;
+  takenDownAt: Timestamp | null;
+  expiresAt: Timestamp;
+  editableUntil: Timestamp;
+  editCount: number;
+  slot: WishSlot;
+  shareId: string;
+  treeId: null;
   createdAt: Timestamp;
+}
+
+export interface WishTreeStats {
+  totalHung: number;
+  totalFulfilled: number;
+  pileCount: number;
+  sampled: WishLite[];
   updatedAt: Timestamp;
-  lastWateredAt: Timestamp | null;
-  fruitId: string | null;
-  wish?: string;
-  step?: string;
-  returnShownAt?: Timestamp | null;
+}
+
+export interface WishLite {
+  wishId: string;
+  text: string;
+  displayName: string | null;
+  tier: "paper";
+  fulfilled: boolean;
+  slot: WishSlot;
 }
