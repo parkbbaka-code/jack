@@ -1,0 +1,124 @@
+.page {
+  background:
+    radial-gradient(
+      circle at 68% 10%,
+      rgb(198 162 78 / 12%),
+      transparent 24rem
+    ),
+    linear-gradient(180deg, #0b1a3a, #0c1810 58%);
+  color: #f6f2e9;
+  min-height: 100svh;
+  padding: 1.5rem 1.25rem 5rem;
+}
+
+.shell {
+  margin: 0 auto;
+  max-width: 620px;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+
+.panels {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel {
+  background: rgb(20 38 28 / 42%);
+  border: 1px solid rgb(246 242 233 / 12%);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 1rem;
+}
+
+.row + .row {
+  border-top: 1px solid rgb(246 242 233 / 10%);
+}
+
+.profile {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.avatar {
+  align-items: center;
+  background: rgb(246 242 233 / 14%);
+  border-radius: 999px;
+  display: flex;
+  font-family: var(--font-serif), Georgia, serif;
+  height: 48px;
+  justify-content: center;
+  overflow: hidden;
+  width: 48px;
+}
+
+.avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.sub {
+  color: #aeb9ad;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.toggle {
+  accent-color: #c6a24e;
+  height: 20px;
+  width: 38px;
+}
+
+.button {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.deleteButton {
+  color: #b37164;
+}
+
+.confirm {
+  background: rgb(179 113 100 / 8%);
+  border-top: 1px solid rgb(179 113 100 / 22%);
+  padding: 1rem;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.confirmDelete {
+  color: #b37164;
+  font-weight: 600;
+}
+
+.error {
+  color: #d9a89e;
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding: 2.5rem 2rem 6rem;
+  }
+}
