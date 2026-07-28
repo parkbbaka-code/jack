@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { WishView } from "@/types/models";
 
@@ -20,11 +20,22 @@ function formatDate(value: string) {
 export function WishTreeExperience({
   initialWishes,
   currentUserId,
+  totalFulfilled,
+  focus,
 }: {
   initialWishes: WishView[];
   currentUserId: string | null;
+  totalFulfilled: number;
+  focus: {
+    wishId: string;
+    x: number;
+    y: number;
+    fulfilled: boolean;
+  } | null;
 }) {
   const router = useRouter();
+  const canopyRef = useRef<HTMLElement>(null);
+  const branchRef = useRef<HTMLElement>(null);
   const [wishes, setWishes] = useState(initialWishes);
   const [selected, setSelected] = useState<WishView | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -44,6 +55,35 @@ export function WishTreeExperience({
     const timer = window.setTimeout(() => setNotice(null), 2200);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!focus) return;
+    const panel = focus.fulfilled ? canopyRef.current : branchRef.current;
+    panel?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timer = window.setTimeout(() => setNotice("내 소원을 찾았어요"), 0);
+    return () => window.clearTimeout(timer);
+  }, [focus]);
+
+  const fulfilledWishes = wishes.filter((wish) => wish.fulfilled);
+  const branchWishes = wishes.filter((wish) => !wish.fulfilled);
+
+  function renderWish(wish: WishView, index: number, canopy = false) {
+    return (
+      <button
+        aria-label={wish.isPublic ? "소원지 열기" : "비공개 소원지"}
+        className={`${styles.paper} ${!wish.isPublic ? styles.privatePaper : ""} ${wish.fulfilled ? styles.fulfilledPaper : ""} ${focus?.wishId === wish.wishId ? styles.focusedPaper : ""}`}
+        key={wish.wishId}
+        onClick={() => openWish(wish)}
+        style={{
+          left: `${wish.slot.x}%`,
+          top: `${canopy ? Math.max(18, wish.slot.y - 18) : wish.slot.y}%`,
+          rotate: `${wish.slot.rot}deg`,
+          animationDelay: `${(index % 7) * -0.55}s`,
+        }}
+        type="button"
+      />
+    );
+  }
 
   function openWish(wish: WishView) {
     if (!wish.isPublic && wish.ownerId !== currentUserId) {
@@ -141,7 +181,40 @@ export function WishTreeExperience({
   return (
     <>
       <section
+        className={`tree-scroll-panel tree-canopy-panel ${styles.scene}`}
+        ref={canopyRef}
+      >
+        <div className="tree-panel-copy">
+          <p className="wish-eyebrow">소원나무</p>
+          <p className="mt-3 text-base text-[#E8EDF7]">
+            이루어진 소원은 우듬지에 모여 있어요
+          </p>
+          {totalFulfilled > 0 ? (
+            <p className="mt-4 inline-flex rounded-full bg-[#0C1810]/60 px-4 py-2 text-xs text-[#F6F2E9]">
+              이 나무에서 {totalFulfilled.toLocaleString("ko-KR")}개의 소원이
+              이루어졌어요
+            </p>
+          ) : null}
+        </div>
+        <div className={styles.objects} aria-label="우듬지의 이루어진 소원지">
+          {fulfilledWishes.map((wish, index) => renderWish(wish, index, true))}
+          {focus?.fulfilled &&
+          !fulfilledWishes.some((wish) => wish.wishId === focus.wishId) ? (
+            <span
+              aria-label="찾은 내 소원지"
+              className={`${styles.paper} ${styles.fulfilledPaper} ${styles.focusedPaper}`}
+              style={{
+                left: `${focus.x}%`,
+                top: `${Math.max(18, focus.y - 18)}%`,
+              }}
+            />
+          ) : null}
+        </div>
+      </section>
+
+      <section
         className={`tree-scroll-panel tree-branch-panel ${styles.scene}`}
+        ref={branchRef}
       >
         <div className="tree-panel-copy">
           <p className="wish-eyebrow">가지에 걸린 소원</p>
@@ -151,24 +224,19 @@ export function WishTreeExperience({
         </div>
 
         <div className={styles.objects} aria-label="가지에 걸린 최근 소원지">
-          {wishes.map((wish, index) => (
-            <button
-              aria-label={wish.isPublic ? "소원지 열기" : "비공개 소원지"}
-              className={`${styles.paper} ${!wish.isPublic ? styles.privatePaper : ""} ${wish.fulfilled ? styles.fulfilledPaper : ""}`}
-              key={wish.wishId}
-              onClick={() => openWish(wish)}
-              style={{
-                left: `${wish.slot.x}%`,
-                top: `${wish.slot.y}%`,
-                rotate: `${wish.slot.rot}deg`,
-                animationDelay: `${(index % 7) * -0.55}s`,
-              }}
-              type="button"
+          {branchWishes.map((wish, index) => renderWish(wish, index))}
+          {focus &&
+          !focus.fulfilled &&
+          !branchWishes.some((wish) => wish.wishId === focus.wishId) ? (
+            <span
+              aria-label="찾은 내 소원지"
+              className={`${styles.paper} ${styles.focusedPaper}`}
+              style={{ left: `${focus.x}%`, top: `${focus.y}%` }}
             />
-          ))}
+          ) : null}
         </div>
 
-        {wishes.length === 0 ? (
+        {branchWishes.length === 0 && !focus ? (
           <p className="relative z-10 m-auto rounded-full bg-[#0C1810]/70 px-4 py-2 text-sm text-[#E8EDF7]">
             가장 먼저 소원을 걸어보세요
           </p>

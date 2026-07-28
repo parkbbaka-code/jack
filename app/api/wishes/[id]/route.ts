@@ -6,12 +6,18 @@ import {
   getSessionDisplayName,
   isSameOrigin,
 } from "@/lib/auth/api-session";
-import { updateWishPrivacy, WishError } from "@/lib/firebase/firestore-rest";
+import {
+  updateWishFulfilled,
+  updateWishPrivacy,
+  updateWishText,
+  WishError,
+} from "@/lib/firebase/firestore-rest";
 
-const bodySchema = z.object({
-  isPublic: z.boolean(),
-  anonymous: z.boolean(),
-});
+const bodySchema = z.union([
+  z.object({ isPublic: z.boolean(), anonymous: z.boolean() }),
+  z.object({ fulfilled: z.boolean() }),
+  z.object({ text: z.string().trim().min(2).max(5_000) }),
+]);
 
 export async function PATCH(
   request: NextRequest,
@@ -33,21 +39,45 @@ export async function PATCH(
 
   try {
     const { id } = await context.params;
-    const privacy = await updateWishPrivacy({
-      wishId: id,
-      ownerId: session.uid,
-      displayName: getSessionDisplayName(session),
-      ...parsed.data,
-    });
-    return NextResponse.json(privacy);
+    if ("fulfilled" in parsed.data) {
+      return NextResponse.json(
+        await updateWishFulfilled({
+          wishId: id,
+          ownerId: session.uid,
+          fulfilled: parsed.data.fulfilled,
+        }),
+      );
+    }
+    if ("text" in parsed.data) {
+      return NextResponse.json(
+        await updateWishText({
+          wishId: id,
+          ownerId: session.uid,
+          text: parsed.data.text,
+        }),
+      );
+    }
+    return NextResponse.json(
+      await updateWishPrivacy({
+        wishId: id,
+        ownerId: session.uid,
+        displayName: getSessionDisplayName(session),
+        ...parsed.data,
+      }),
+    );
   } catch (error) {
     if (error instanceof WishError) {
       const status = error.reason === "not-found" ? 404 : 403;
-      if (error.reason === "not-found" || error.reason === "forbidden") {
+      if (
+        error.reason === "not-found" ||
+        error.reason === "forbidden" ||
+        error.reason === "edit-window-closed" ||
+        error.reason === "edit-limit-reached"
+      ) {
         return NextResponse.json({ error: error.reason }, { status });
       }
     }
-    console.error("Wish privacy update failed", {
+    console.error("Wish update failed", {
       reason: error instanceof WishError ? error.reason : "unknown",
     });
     return NextResponse.json({ error: "service-error" }, { status: 503 });

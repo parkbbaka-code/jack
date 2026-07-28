@@ -77,3 +77,11 @@ export interface WishTreeStatsView {
   totalFulfilled: number;
   pileCount: number;
 }
+
+export interface MyWishView extends WishView {
+  hidden: boolean;
+  takenDownAt: string | null;
+  expiresAt: string;
+  editableUntil: string;
+  editCount: number;
+}

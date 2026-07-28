@@ -8,7 +8,7 @@ import {
   TEXT_LIMIT,
 } from "@/constants/wishes";
 import { assignWishSlot } from "@/lib/wishes/slots";
-import type { WishTreeStatsView, WishView } from "@/types/models";
+import type { MyWishView, WishTreeStatsView, WishView } from "@/types/models";
 import { nanoid } from "nanoid";
 
 export class WishError extends Error {
@@ -16,6 +16,8 @@ export class WishError extends Error {
     public readonly reason:
       | "free-paper-used"
       | "duplicate-report"
+      | "edit-window-closed"
+      | "edit-limit-reached"
       | "not-found"
       | "forbidden"
       | "service-error",
@@ -62,6 +64,13 @@ function nullableStringField(
     : (fields[key]?.stringValue ?? null);
 }
 
+function nullableTimestampField(
+  fields: Record<string, FirestoreValue>,
+  key: string,
+) {
+  return fields[key]?.timestampValue ?? null;
+}
+
 function wishFromDocument(
   document: FirestoreDocument,
   viewerId: string | null,
@@ -100,6 +109,43 @@ function wishFromDocument(
     isPublic,
     anonymous: booleanField(fields, "anonymous"),
     fulfilled: booleanField(fields, "fulfilled"),
+    slot: {
+      x: numberField(slotFields, "x"),
+      y: numberField(slotFields, "y"),
+      rot: numberField(slotFields, "rot"),
+    },
+    shareId: stringField(fields, "shareId"),
+    createdAt: fields.createdAt?.timestampValue ?? new Date(0).toISOString(),
+  };
+}
+
+function myWishFromDocument(document: FirestoreDocument): MyWishView | null {
+  const fields = document.fields;
+  if (!fields) return null;
+
+  const wishId = stringField(fields, "wishId");
+  const ownerId = stringField(fields, "ownerId");
+  const slotFields = fields.slot?.mapValue?.fields;
+  const expiresAt = fields.expiresAt?.timestampValue;
+  const editableUntil = fields.editableUntil?.timestampValue;
+  if (!wishId || !ownerId || !slotFields || !expiresAt || !editableUntil) {
+    return null;
+  }
+
+  return {
+    wishId,
+    ownerId,
+    displayName: nullableStringField(fields, "displayName"),
+    text: stringField(fields, "text"),
+    tier: "paper",
+    isPublic: booleanField(fields, "isPublic"),
+    anonymous: booleanField(fields, "anonymous"),
+    fulfilled: booleanField(fields, "fulfilled"),
+    hidden: booleanField(fields, "hidden"),
+    takenDownAt: nullableTimestampField(fields, "takenDownAt"),
+    expiresAt,
+    editableUntil,
+    editCount: numberField(fields, "editCount"),
     slot: {
       x: numberField(slotFields, "x"),
       y: numberField(slotFields, "y"),
@@ -551,5 +597,215 @@ export async function updateWishPrivacy(input: {
     };
   } finally {
     if (!committed) await rollbackTransaction(databaseName, transaction);
+  }
+}
+
+async function queryOwnedWishDocuments(ownerId: string, limit?: number) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents:runQuery`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "wishes" }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: "ownerId" },
+              op: "EQUAL",
+              value: { stringValue: ownerId },
+            },
+          },
+          orderBy: [
+            { field: { fieldPath: "createdAt" }, direction: "DESCENDING" },
+          ],
+          ...(limit ? { limit } : {}),
+        },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    throw new WishError("service-error", "Could not list owned wishes.");
+  }
+
+  const rows = (await response.json()) as Array<{
+    document?: FirestoreDocument;
+  }>;
+  return rows.flatMap((row) => (row.document ? [row.document] : []));
+}
+
+export async function listMyWishes(ownerId: string): Promise<MyWishView[]> {
+  const documents = await queryOwnedWishDocuments(ownerId, 100);
+  return documents
+    .map(myWishFromDocument)
+    .filter((wish): wish is MyWishView => wish !== null);
+}
+
+export async function updateWishFulfilled(input: {
+  wishId: string;
+  ownerId: string;
+  fulfilled: boolean;
+}) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const transaction = await beginTransaction(databaseName);
+  let committed = false;
+
+  try {
+    const wish = await readWishInTransaction(
+      databaseName,
+      input.wishId,
+      transaction,
+    );
+    if (stringField(wish.fields ?? {}, "ownerId") !== input.ownerId) {
+      throw new WishError("forbidden", "Only the owner can update a wish.");
+    }
+
+    const response = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: `${databaseName}/documents/wishes/${input.wishId}`,
+                fields: {
+                  fulfilled: { booleanValue: input.fulfilled },
+                  fulfilledAt: input.fulfilled
+                    ? { timestampValue: new Date().toISOString() }
+                    : { nullValue: null },
+                },
+              },
+              updateMask: { fieldPaths: ["fulfilled", "fulfilledAt"] },
+            },
+          ],
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new WishError("service-error", "Could not update wish state.");
+    }
+
+    committed = true;
+    return { fulfilled: input.fulfilled };
+  } finally {
+    if (!committed) await rollbackTransaction(databaseName, transaction);
+  }
+}
+
+export async function updateWishText(input: {
+  wishId: string;
+  ownerId: string;
+  text: string;
+}) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const transaction = await beginTransaction(databaseName);
+  let committed = false;
+
+  try {
+    const wish = await readWishInTransaction(
+      databaseName,
+      input.wishId,
+      transaction,
+    );
+    const fields = wish.fields ?? {};
+    if (stringField(fields, "ownerId") !== input.ownerId) {
+      throw new WishError("forbidden", "Only the owner can update a wish.");
+    }
+    const editableUntil = fields.editableUntil?.timestampValue;
+    if (!editableUntil || new Date(editableUntil).getTime() <= Date.now()) {
+      throw new WishError("edit-window-closed", "Wish edit window is closed.");
+    }
+    const editCount = numberField(fields, "editCount");
+    if (editCount >= 3) {
+      throw new WishError("edit-limit-reached", "Wish edit limit reached.");
+    }
+
+    const text = Array.from(input.text.trim())
+      .slice(0, TEXT_LIMIT.paper)
+      .join("");
+    const response = await authorizedFirestoreFetch(
+      `${databaseName}/documents:commit`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction,
+          writes: [
+            {
+              update: {
+                name: `${databaseName}/documents/wishes/${input.wishId}`,
+                fields: {
+                  text: { stringValue: text },
+                  editCount: { integerValue: String(editCount + 1) },
+                },
+              },
+              updateMask: { fieldPaths: ["text", "editCount"] },
+            },
+          ],
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new WishError("service-error", "Could not edit wish.");
+    }
+
+    committed = true;
+    return { text, editCount: editCount + 1 };
+  } finally {
+    if (!committed) await rollbackTransaction(databaseName, transaction);
+  }
+}
+
+export async function anonymizeAccountData(ownerId: string) {
+  const { projectId } = getFirebaseServiceAccount();
+  const databaseName = `projects/${projectId}/databases/(default)`;
+  const documents = await queryOwnedWishDocuments(ownerId);
+
+  if (documents.length > 490) {
+    throw new WishError("service-error", "Too many wishes to anonymize.");
+  }
+
+  const writes = documents.flatMap((document) => {
+    const wishId = document.fields
+      ? stringField(document.fields, "wishId")
+      : "";
+    if (!wishId) return [];
+
+    return [
+      {
+        update: {
+          name: `${databaseName}/documents/wishes/${wishId}`,
+          fields: {
+            ownerId: { stringValue: `departed:${crypto.randomUUID()}` },
+            displayName: { nullValue: null },
+            anonymous: { booleanValue: true },
+          },
+        },
+        updateMask: {
+          fieldPaths: ["ownerId", "displayName", "anonymous"],
+        },
+      },
+    ];
+  });
+
+  const response = await authorizedFirestoreFetch(
+    `${databaseName}/documents:commit`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        writes: [
+          ...writes,
+          { delete: `${databaseName}/documents/users/${ownerId}` },
+        ],
+      }),
+    },
+  );
+  if (!response.ok) {
+    throw new WishError("service-error", "Could not anonymize account data.");
   }
 }

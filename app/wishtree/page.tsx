@@ -13,7 +13,12 @@ import { verifySession } from "@/lib/firebase/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function WishTreePage() {
+export default async function WishTreePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   const session = sessionCookie ? await verifySession(sessionCookie) : null;
   const [wishes, stats] = await Promise.all([
@@ -30,6 +35,23 @@ export default async function WishTreePage() {
       };
     }),
   ]);
+  const focusX = Number(params.x);
+  const focusY = Number(params.y);
+  const focus =
+    typeof params.wish === "string" &&
+    Number.isFinite(focusX) &&
+    Number.isFinite(focusY) &&
+    focusX >= 0 &&
+    focusX <= 100 &&
+    focusY >= 0 &&
+    focusY <= 100
+      ? {
+          wishId: params.wish,
+          x: focusX,
+          y: focusY,
+          fulfilled: params.fulfilled === "1",
+        }
+      : null;
 
   return (
     <main className="wish-night min-h-svh text-[#F6F2E9]">
@@ -45,24 +67,14 @@ export default async function WishTreePage() {
         </Link>
       </header>
 
-      <section className="tree-scroll-panel tree-canopy-panel">
-        <div className="tree-panel-copy">
-          <p className="wish-eyebrow">소원나무</p>
-          <p className="mt-3 text-base text-[#E8EDF7]">
-            별빛 아래, 이루어진 소원들이 머무는 곳
-          </p>
-          {stats.totalFulfilled > 0 ? (
-            <p className="mt-4 inline-flex rounded-full bg-[#0C1810]/60 px-4 py-2 text-xs text-[#F6F2E9]">
-              이 나무에서 {stats.totalFulfilled.toLocaleString("ko-KR")}개의
-              소원이 이루어졌어요
-            </p>
-          ) : null}
-        </div>
-      </section>
-
       <WishTreeExperience
         currentUserId={session?.uid ?? null}
+        focus={focus}
         initialWishes={wishes}
+        totalFulfilled={Math.max(
+          stats.totalFulfilled,
+          wishes.filter((wish) => wish.fulfilled).length,
+        )}
       />
 
       <section className="tree-scroll-panel tree-trunk-panel">
