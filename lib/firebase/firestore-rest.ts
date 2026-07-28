@@ -80,6 +80,8 @@ function wishFromDocument(
     !ownerId ||
     !slotFields ||
     !expiresAt ||
+    booleanField(fields, "hidden") ||
+    fields.takenDownAt?.nullValue !== null ||
     new Date(expiresAt).getTime() <= Date.now()
   ) {
     return null;
@@ -307,26 +309,6 @@ export async function listRecentWishes(
       body: JSON.stringify({
         structuredQuery: {
           from: [{ collectionId: "wishes" }],
-          where: {
-            compositeFilter: {
-              op: "AND",
-              filters: [
-                {
-                  fieldFilter: {
-                    field: { fieldPath: "hidden" },
-                    op: "EQUAL",
-                    value: { booleanValue: false },
-                  },
-                },
-                {
-                  unaryFilter: {
-                    field: { fieldPath: "takenDownAt" },
-                    op: "IS_NULL",
-                  },
-                },
-              ],
-            },
-          },
           orderBy: [
             { field: { fieldPath: "createdAt" }, direction: "DESCENDING" },
           ],
