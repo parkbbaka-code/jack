@@ -7,8 +7,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "IROORI",
-    template: "%s · IROORI",
+    default: "이루리",
+    template: "%s · 이루리",
   },
   description: "기록으로 소원을 키우는 조용한 디지털 숲",
 };

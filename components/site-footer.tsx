@@ -4,7 +4,7 @@ export function SiteFooter() {
   return (
     <footer className="bg-[#08120C] px-5 py-10 text-[13px] leading-6 text-[#9AA69D]">
       <div className="mx-auto max-w-5xl">
-        <p className="mb-3 font-medium text-[#F6F2E9]">IROORI (이루리)</p>
+        <p className="mb-3 font-medium text-[#F6F2E9]">이루리</p>
         <p>우베르(UBERE) | 대표 박용철</p>
         <p>충청남도 천안시 서북구 두정상가3길 33, 2층 267호(두정동)</p>
         <p>

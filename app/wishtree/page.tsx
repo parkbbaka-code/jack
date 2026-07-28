@@ -60,7 +60,7 @@ export default async function WishTreePage({
       </Suspense>
       <header className="sticky top-0 z-30 flex items-center justify-between bg-[#0B1A3A]/80 px-5 py-6 backdrop-blur-sm sm:px-8">
         <Link className="font-serif text-xl tracking-[0.18em]" href="/">
-          IROORI
+          이루리
         </Link>
         <Link className="text-base text-[#E8EDF7]" href="/mywishes">
           내 소원
