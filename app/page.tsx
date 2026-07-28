@@ -1,28 +1,107 @@
 import Link from "next/link";
 
-export default function Home() {
+import {
+  getWishTreeStats,
+  listRecentWishes,
+} from "@/lib/firebase/firestore-rest";
+
+import styles from "./home.module.css";
+
+export const dynamic = "force-dynamic";
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(value));
+}
+
+export default async function Home() {
+  const [wishes, stats] = await Promise.all([
+    listRecentWishes(null).catch(() => []),
+    getWishTreeStats().catch(() => ({
+      totalHung: 0,
+      totalFulfilled: 0,
+      pileCount: 0,
+    })),
+  ]);
+  const publicWishes = wishes.filter((wish) => wish.isPublic).slice(0, 3);
+  const totalHung = Math.max(stats.totalHung, wishes.length);
+  const totalFulfilled = Math.max(
+    stats.totalFulfilled,
+    wishes.filter((wish) => wish.fulfilled).length,
+  );
+
   return (
-    <main className="relative flex min-h-svh items-center justify-center overflow-hidden px-6 py-16">
-      <div className="forest-halo" aria-hidden="true" />
-      <section className="relative z-10 mx-auto max-w-xl text-center">
-        <p className="text-canopy mb-5 text-sm tracking-[0.32em]">IROORI</p>
-        <h1 className="text-forest font-serif text-5xl leading-tight sm:text-7xl">
-          천천히,
-          <br />
-          이루리.
-        </h1>
-        <p className="text-sub mx-auto mt-7 max-w-md text-base leading-8 sm:text-lg">
-          시간은 계절을 바꾸고, 당신의 기록은 나무를 키웁니다.
-          <br />
-          멈춰 있어도 나무는 조용히 기다립니다.
-        </p>
-        <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link className="button-primary" href="/login">
-            첫 씨앗 심기
-          </Link>
-          <Link className="button-secondary" href="/forest">
-            모두의 숲 둘러보기
-          </Link>
+    <main>
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <p className={styles.wordmark}>이루리</p>
+          <h1 className={styles.headline}>
+            여기, 소원을
+            <br />
+            걸고 가세요.
+          </h1>
+          <p className="mx-auto mt-7 max-w-md text-base leading-8 text-[#E8EDF7] sm:text-lg">
+            이루리 — 소원을 나무로 키우는 곳
+          </p>
+          <div className="mx-auto mt-10 flex max-w-sm flex-col gap-3">
+            <Link className="wish-gold-button" href="/wish/new">
+              소원 걸기
+            </Link>
+            <Link className="wish-ghost-button" href="/wishtree">
+              소원나무 구경하기
+            </Link>
+          </div>
+          <p className="mt-5 text-sm text-[#E8EDF7]/70">
+            로그인 없이 둘러볼 수 있어요
+          </p>
+        </div>
+      </section>
+
+      <section className={styles.content}>
+        <div className={styles.contentShell}>
+          <div className={styles.stats}>
+            <div>
+              <p className={styles.statNumber}>
+                {totalHung.toLocaleString("ko-KR")}
+              </p>
+              <p className={styles.statLabel}>걸린 소원</p>
+            </div>
+            <div>
+              <p className={styles.statNumber}>
+                {totalFulfilled.toLocaleString("ko-KR")}
+              </p>
+              <p className={styles.statLabel}>이루어진 소원</p>
+            </div>
+          </div>
+
+          {publicWishes.length > 0 ? (
+            <div className={styles.papers} aria-label="소원나무의 최근 소원">
+              {publicWishes.map((wish) => (
+                <article className={styles.paper} key={wish.wishId}>
+                  <p>{wish.text}</p>
+                  <p className={styles.paperMeta}>
+                    {wish.anonymous ? "익명" : wish.displayName} ·{" "}
+                    {formatDate(wish.createdAt)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : null}
+
+          <div className={styles.invitation}>
+            <p className="wish-eyebrow">당신의 소원은 무엇인가요</p>
+            <h2 className="mt-5 font-serif text-3xl leading-relaxed sm:text-5xl">
+              마음에 머무는 한 문장을
+              <br />
+              나무에 걸어보세요.
+            </h2>
+            <Link className="wish-gold-button mt-8" href="/wish/new">
+              소원 걸기
+            </Link>
+          </div>
         </div>
       </section>
     </main>

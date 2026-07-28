@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AppProviders } from "@/app/providers";
+import { SiteFooter } from "@/components/site-footer";
 
 import "./globals.css";
 
@@ -20,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <AppProviders>{children}</AppProviders>
+        <AppProviders>
+          {children}
+          <SiteFooter />
+        </AppProviders>
       </body>
     </html>
   );
